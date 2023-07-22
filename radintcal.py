@@ -9,14 +9,14 @@ import time
 startTime = time.time()
 
 
-solint_long = '64s'
+solint_long = '66s'
 calculate_long_solint = True
 
-solint_mid = '32s'
+solint_mid = '33s'
 calculate_mid_solint = True
 
 
-solint_short = '16s'
+solint_short = '18s'
 calculate_short_solint = True
 #Some tables will be calculated for this, no matter true of false.
 # E.G. short phases for the bandpass and delay need to be short.
@@ -43,7 +43,7 @@ flag_with_tfcrop = False
 
 # calibration settings
 additional_gain_tables = False
-minsnr = 2.0
+minsnr = 3.0
 combine = ''
 
 # Create additional flagbackups along the way.
@@ -62,7 +62,7 @@ report_verbosity = 2
     # return()
 
 # Include any override variables in the config file.
-exec(open('./config_input_23A-324_X.py').read())
+exec(open('./config_input_18A-095.py').read())
 #select some fields (or all) to make visibility plots along the way.
 # the more, the longer is the time, though....
 # useful to see how calibration and automatic flagging performs.
@@ -574,15 +574,15 @@ def initial_flagging():
         # flagdata(vis=vis, mode='tfcrop',datacolumn='data',
         #     action='apply',display='',reason='tfcrop',
         #     name='tfcrop',flagbackup=False,outfile='tfcrop_flag')
-        flagdata(vis=vis,mode='tfcrop',field=all_fields_str,display='',spw='',
+        flagdata(vis=vis,mode='tfcrop',field=calibrators_all,display='',spw='',
             datacolumn='data', ntime='scan', combinescans=False,
             extendflags=False,flagnearfreq=False,flagneartime=False,
             growaround=False,
-            timecutoff=2.5,freqcutoff=2.5,maxnpieces=5,winsize=7,
+            timecutoff=2.0,freqcutoff=2.0,maxnpieces=5,winsize=7,
             action='apply', flagbackup=False, savepars=True
             )
 
-        flagdata(vis=vis,mode='extend',field=all_fields_str,spw='',display='report',
+        flagdata(vis=vis,mode='extend',field=calibrators_all,spw='',display='report',
             action='apply',datacolumn='data', combinescans=False,flagbackup=False,
             growtime=75.0,growfreq=75.0,extendpols=True)
 
@@ -728,7 +728,7 @@ def calibration():
             calmode='p', solint=solint_short, minsnr=minsnr,gaintype='G',
             # gaintable=[base_path+'calibration/'+'antpos_'+name+'.tb']
             gaintable=[
-                base_path+'calibration/antpos_'+name+'.tb',
+                #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -746,7 +746,7 @@ def calibration():
             field=bandpass_calibrator,refant=refant,spw=spw_skip_edge,gaintype='K',
             solint='inf',combine=combine,minsnr=minsnr,calmode='p',
             gaintable=[
-                base_path+'calibration/antpos_'+name+'.tb',
+                #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -761,7 +761,7 @@ def calibration():
             calmode='ap', solint=solint_short, minsnr=minsnr,gaintype='G',
             # gaintable=[base_path+'calibration/'+'antpos_'+name+'.tb']
             gaintable=[
-                base_path+'calibration/antpos_'+name+'.tb',
+                #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -786,7 +786,7 @@ def calibration():
         #     calmode='ap', solint=solint_long, minsnr=minsnr,gaintype='G',
         #     # gaintable=[base_path+'calibration/'+'antpos_'+name+'.tb']
         #     gaintable=[
-        #         base_path+'calibration/antpos_'+name+'.tb',
+        #         #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
         #         base_path+'calibration/gaincurve_gc_'+name+'.tb',
         #         base_path+'calibration/opacity_'+name+'.tb',
         #         base_path+'calibration/rq_'+name+'.tb',
@@ -812,7 +812,7 @@ def calibration():
                 calmode='p', solint=solint_mid, minsnr=minsnr,gaintype='G',
                 # gaintable=[base_path+'calibration/'+'antpos_'+name+'.tb']
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -830,7 +830,7 @@ def calibration():
                 field=bandpass_calibrator,refant=refant,spw=spw_skip_edge,gaintype='K',
                 solint='inf',combine=combine,minsnr=minsnr,calmode='p',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -845,7 +845,7 @@ def calibration():
                 calmode='ap', solint=solint_mid, minsnr=minsnr,gaintype='G',
                 # gaintable=[base_path+'calibration/'+'antpos_'+name+'.tb']
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -871,7 +871,7 @@ def calibration():
                 calmode='p', solint=solint_long, minsnr=minsnr,gaintype='G',
                 # gaintable=[base_path+'calibration/'+'antpos_'+name+'.tb']
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -890,7 +890,7 @@ def calibration():
                 field=bandpass_calibrator,refant=refant,spw=spw_skip_edge,gaintype='K',
                 solint='inf',combine=combine,minsnr=minsnr,calmode='p',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -905,7 +905,7 @@ def calibration():
                 calmode='ap', solint=solint_long, minsnr=minsnr,gaintype='G',
                 # gaintable=[base_path+'calibration/'+'antpos_'+name+'.tb']
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -932,7 +932,7 @@ def calibration():
                 field=bandpass_calibrator,refant=refant,combine='scan', minsnr=minsnr,
                 solint='inf',bandtype='B',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -959,7 +959,7 @@ def calibration():
                 field=bandpass_calibrator,refant=refant,combine='scan', minsnr=minsnr,
                 solint='inf',bandtype='B',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -981,7 +981,7 @@ def calibration():
             field=bandpass_calibrator,refant=refant,combine='scan', minsnr=minsnr,
             solint='inf',bandtype='B',
             gaintable=[
-                base_path+'calibration/antpos_'+name+'.tb',
+                #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -1011,7 +1011,7 @@ def calibration():
             calmode='p', solint=solint_short, minsnr=minsnr,gaintype='G',
             # gaintable=[base_path+'calibration/'+'antpos_'+name+'.tb']
             gaintable=[
-                base_path+'calibration/antpos_'+name+'.tb',
+                #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -1031,7 +1031,7 @@ def calibration():
             field=calibrators_all,refant=refant,spw=spw_skip_edge,gaintype='K',
             solint='inf',combine=combine,minsnr=minsnr,calmode='p',
             gaintable=[
-                base_path+'calibration/antpos_'+name+'.tb',
+                #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -1051,7 +1051,7 @@ def calibration():
                 calmode='ap', solint=solint_short, minsnr=minsnr,gaintype='G',
                 # gaintable=[base_path+'calibration/'+'antpos_'+name+'.tb']
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1097,7 +1097,7 @@ def calibration():
                 calmode='p', solint=solint_mid, minsnr=minsnr,gaintype='G',
                 # gaintable=[base_path+'calibration/'+'antpos_'+name+'.tb']
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1117,7 +1117,7 @@ def calibration():
                 field=calibrators_all,refant=refant,spw=spw_skip_edge,gaintype='K',
                 solint='inf',combine=combine,minsnr=minsnr,calmode='p',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1134,7 +1134,7 @@ def calibration():
                 calmode='ap', solint=solint_mid, minsnr=minsnr,gaintype='G',
                 # gaintable=[base_path+'calibration/'+'antpos_'+name+'.tb']
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1181,7 +1181,7 @@ def calibration():
                 calmode='p', solint=solint_long, minsnr=minsnr,gaintype='G',
                 # gaintable=[base_path+'calibration/'+'antpos_'+name+'.tb']
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1202,7 +1202,7 @@ def calibration():
                 field=calibrators_all,refant=refant,spw=spw_skip_edge,gaintype='K',
                 solint='inf',combine=combine,minsnr=minsnr,calmode='p',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1218,7 +1218,7 @@ def calibration():
                 field=calibrators_all, refant=refant, spw=spw_central,
                 calmode='ap', solint=solint_long, minsnr=minsnr,gaintype='G',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1293,7 +1293,7 @@ def calibration():
             field=bandpass_calibrator, refant=refant, spw=spw_central,
             calmode='p', solint=solint_short, minsnr=minsnr,gaintype='G',
             gaintable=[
-                base_path+'calibration/antpos_'+name+'.tb',
+                #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -1311,7 +1311,7 @@ def calibration():
             field=bandpass_calibrator,refant=refant,spw=spw_skip_edge,gaintype='K',
             solint='inf',combine=combine,minsnr=minsnr,calmode='p',
             gaintable=[
-                base_path+'calibration/antpos_'+name+'.tb',
+                #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -1325,7 +1325,7 @@ def calibration():
             field=bandpass_calibrator, refant=refant, spw=spw_central,
             calmode='ap', solint=solint_short, minsnr=minsnr,gaintype='G',
             gaintable=[
-                base_path+'calibration/antpos_'+name+'.tb',
+                #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -1372,7 +1372,7 @@ def calibration():
                 field=bandpass_calibrator, refant=refant, spw=spw_central,
                 calmode='p', solint=solint_mid, minsnr=minsnr,gaintype='G',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1390,7 +1390,7 @@ def calibration():
                 field=bandpass_calibrator,refant=refant,spw=spw_skip_edge,gaintype='K',
                 solint='inf',combine=combine,minsnr=minsnr,calmode='p',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1405,7 +1405,7 @@ def calibration():
                 calmode='ap', solint=solint_mid, minsnr=minsnr,gaintype='G',
                 # gaintable=[base_path+'calibration/'+'antpos_'+name+'.tb']
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1428,7 +1428,7 @@ def calibration():
                 field=bandpass_calibrator,refant=refant,combine='scan', minsnr=minsnr,
                 solint='inf',bandtype='B',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1453,7 +1453,7 @@ def calibration():
                 field=bandpass_calibrator, refant=refant, spw=spw_central,
                 calmode='p', solint=solint_long, minsnr=minsnr,gaintype='G',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1471,7 +1471,7 @@ def calibration():
                 field=bandpass_calibrator,refant=refant,spw=spw_skip_edge,gaintype='K',
                 solint='inf',combine=combine,minsnr=minsnr,calmode='p',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1485,7 +1485,7 @@ def calibration():
                 field=bandpass_calibrator, refant=refant, spw=spw_central,
                 calmode='ap', solint=solint_long, minsnr=minsnr,gaintype='G',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1508,7 +1508,7 @@ def calibration():
                 field=bandpass_calibrator,refant=refant,combine='scan', minsnr=minsnr,
                 solint='inf',bandtype='B',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1543,7 +1543,7 @@ def calibration():
             field=calibrators_all, refant=refant, spw=spw_central,
             calmode='p', solint=solint_short, minsnr=minsnr,gaintype='G',
             gaintable=[
-                base_path+'calibration/antpos_'+name+'.tb',
+                #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -1565,7 +1565,7 @@ def calibration():
                 field=calibrators_all, refant=refant, spw=spw_central,
                 calmode='ap', solint=solint_short, minsnr=minsnr,gaintype='G',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1591,7 +1591,7 @@ def calibration():
                 field=calibrators_all,refant=refant,combine='scan', minsnr=minsnr,
                 solint='inf',bandtype='B',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1637,7 +1637,7 @@ def calibration():
                 field=calibrators_all, refant=refant, spw=spw_central,
                 calmode='p', solint=solint_mid, minsnr=minsnr,gaintype='G',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1657,7 +1657,7 @@ def calibration():
                 field=calibrators_all, refant=refant, spw=spw_central,
                 calmode='ap', solint=solint_mid, minsnr=minsnr,gaintype='G',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1683,7 +1683,7 @@ def calibration():
                 field=calibrators_all,refant=refant,combine='scan', minsnr=minsnr,
                 solint='inf',bandtype='B',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1729,7 +1729,7 @@ def calibration():
                 field=calibrators_all, refant=refant, spw=spw_central,
                 calmode='p', solint=solint_long, minsnr=minsnr,gaintype='G',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1749,7 +1749,7 @@ def calibration():
                 field=calibrators_all, refant=refant, spw=spw_central,
                 calmode='ap', solint=solint_long, minsnr=minsnr,gaintype='G',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1774,7 +1774,7 @@ def calibration():
                 field=calibrators_all,refant=refant,combine='scan', minsnr=minsnr,
                 solint='inf',bandtype='B',
                 gaintable=[
-                    base_path+'calibration/antpos_'+name+'.tb',
+                    #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                     base_path+'calibration/gaincurve_gc_'+name+'.tb',
                     base_path+'calibration/opacity_'+name+'.tb',
                     base_path+'calibration/rq_'+name+'.tb',
@@ -1827,7 +1827,7 @@ def calibration():
             field=calibrators_all, refant=refant, spw=spw_central,combine=combine,
             calmode='p', solint=solint_final, minsnr=minsnr,gaintype='G',
             gaintable=[
-                base_path+'calibration/antpos_'+name+'.tb',
+                #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -1850,7 +1850,7 @@ def calibration():
             field=calibrators_all, refant=refant, spw=spw_central,combine=combine,
             calmode='ap', solint=solint_final, minsnr=minsnr,gaintype='G',
             gaintable=[
-                base_path+'calibration/antpos_'+name+'.tb',
+                #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -1876,7 +1876,7 @@ def calibration():
             field=calibrators_all, refant=refant, spw=spw_central,combine=combine,
             calmode='ap', solint=solint_final, minsnr=minsnr,gaintype='G',
             gaintable=[
-                base_path+'calibration/antpos_'+name+'.tb',
+                #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -1960,7 +1960,7 @@ def calibration():
             field=calibrators_all, refant=refant, spw=spw_central,combine='',
             calmode='p', solint=solint_final, minsnr=minsnr,gaintype='G',
             gaintable=[
-                # base_path+'calibration/antpos_'+name+'.tb',
+                # #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -1984,7 +1984,7 @@ def calibration():
             field=calibrators_all, refant=refant, spw=spw_central,combine='',
             calmode='p', solint=solint_main, minsnr=minsnr,gaintype='G',
             gaintable=[
-                # base_path+'calibration/antpos_'+name+'.tb',
+                # #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -2009,7 +2009,7 @@ def calibration():
             calmode='ap', solint=solint_final, minsnr=minsnr,gaintype='G',
             # gaintable=[base_path+'calibration/'+'antpos_'+name+'.tb']
             gaintable=[
-                # base_path+'calibration/antpos_'+name+'.tb',
+                # #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -2039,7 +2039,7 @@ def calibration():
             calmode='ap', solint=solint_final, minsnr=minsnr,gaintype='G',
             # gaintable=[base_path+'calibration/'+'antpos_'+name+'.tb']
             gaintable=[
-                # base_path+'calibration/antpos_'+name+'.tb',
+                # #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
                 base_path+'calibration/gaincurve_gc_'+name+'.tb',
                 base_path+'calibration/opacity_'+name+'.tb',
                 base_path+'calibration/rq_'+name+'.tb',
@@ -2142,7 +2142,7 @@ def calibration():
         # ]
 
         # tables_to_apply = [
-        #     #base_path+'calibration/antpos_'+name+'.tb',
+        #     ##fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
         #     base_path+'calibration/gaincurve_gc_'+name+'.tb',
         #     base_path+'calibration/opacity_'+name+'.tb',
         #     base_path+'calibration/rq_'+name+'.tb',
@@ -2159,7 +2159,7 @@ def calibration():
         #     ]
 
         tables_to_apply_calibrators = [
-            base_path+'calibration/antpos_'+name+'.tb',
+            #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
             base_path+'calibration/gaincurve_gc_'+name+'.tb',
             base_path+'calibration/opacity_'+name+'.tb',
             base_path+'calibration/rq_'+name+'.tb',
@@ -2188,7 +2188,7 @@ def calibration():
         report_flag(summary_targets_before,'field')
 
         tables_to_apply_targets = [
-            base_path+'calibration/antpos_'+name+'.tb',
+            #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
             base_path+'calibration/gaincurve_gc_'+name+'.tb',
             base_path+'calibration/opacity_'+name+'.tb',
             base_path+'calibration/rq_'+name+'.tb',
@@ -2251,7 +2251,7 @@ def calibration():
     j=i
 
     tables_to_apply = [
-        base_path+'calibration/antpos_'+name+'.tb',
+        #fix_this_errorbase_path+'calibration/antpos_'+name+'.tb',
         base_path+'calibration/gaincurve_gc_'+name+'.tb',
         base_path+'calibration/opacity_'+name+'.tb',
         base_path+'calibration/rq_'+name+'.tb',
@@ -2369,8 +2369,11 @@ def split_fields():
             os.makedirs(base_path+'fields/'+field)
 
         g_name = base_path+'fields/'+field+'/'+field+'.calibrated'
-        g_vis = g_name + '.ms'
-        split(vis=vis,outputvis=g_vis,field=field,datacolumn='corrected')
+        # g_vis = g_name + '.ms'
+        # split(vis=vis,outputvis=g_vis,field=field,datacolumn='corrected')
+        # statwt(vis=g_vis,datacolumn='data')
+        g_vis = g_name+'_RR_LL.avg8s.ms'
+        split(vis=vis,outputvis=g_vis,field=field,timebin='8s',correlation='RR,LL',datacolumn='corrected')
         statwt(vis=g_vis,datacolumn='data')
 
         flagmanager(vis=g_vis,mode='save',versionname='Original',
@@ -2453,22 +2456,22 @@ def basic_imaging(threshold='1.0e-4Jy',niter=10000,
 
 data_handle()
 
-make_plots_stages(stage='before',kind='before_tfcrop_init',FIELDS=fields_test_plot,plot_all_uv=False)
+# make_plots_stages(stage='before',kind='before_tfcrop_init',FIELDS=fields_test_plot,plot_all_uv=False)
 # #
 initial_flagging()
 #
 make_plots_stages(stage='before',kind='after_tfcrop_init',FIELDS=fields_test_plot,plot_all_uv=False)
 initial_corrections()
-# #
-# #
-# """
+
+#
+
 # calibration()
-#
-#
-# # make_plots_stages(stage='after',kind='after_rflag_and_cal',FIELDS=fields_test_plot)
-# """
+
+
+# make_plots_stages(stage='after',kind='after_rflag_and_cal',FIELDS=fields_test_plot)
+
 # make_plots_stages(stage='after',kind='after_cal_before_rflag',FIELDS=target_fields)
-#
+
 # add_final_auto_flags = True
 # if add_final_auto_flags == True:
 #     '''
@@ -2477,8 +2480,8 @@ initial_corrections()
 #     final_auto_flag()
 #
 # split_fields()
-#
-# # make_plots_stages(stage='after',kind='final',FIELDS=target_fields_arr,plot_all_uv=False)
+# #
+# make_plots_stages(stage='after',kind='final',FIELDS=target_fields,plot_all_uv=True)
 # # basic_imaging()
 
 exec_time = time.time() - startTime
