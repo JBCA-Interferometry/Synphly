@@ -121,15 +121,27 @@ def flux_scale_setjy():
         logging.critical(f"Exception {e} while clearing calibrations")
     
     logging.info(f'Setting the flux scaling using {flux_calibrator}')
-  
-    model = "3C286_C.im"
-    flux_density_data = casatasks.setjy(vis=vis, field=flux_calibrator, spw='',model=model, scalebychan=True,
-                                  standard='Perley-Butler 2017',listmodels=False, usescratch=True)
 
+
+    # Get the frequency of the first spectral window
+    # fix model here
+    spw = 0
+    spw0_freq = msmd.chanfreqs(0)
+    
+    model = "3C286"
+    if spw0_freq*1e-9 < 8:
+        logging.info(f"Observations done in the C-band")
+        model = model+'_C.im'
+    
+    try:
+        logging.info(f"Performing absolute flux calibration using {model}")
+        flux_density_data = casatasks.setjy(vis=vis, field=flux_calibrator, 
+                                    spw='',model=model, scalebychan=True,
+                                    standard='Perley-Butler 2017',listmodels=False, usescratch=True)
+    except Exception as e:
+        logging.critical(f"Exception {e} while running setjy")
 
     plots_dir = os.path.join(working_directory).rstrip('/')+'/'+ 'plots'
-
-
     spws = []
     fluxes = []
     for key in list(flux_density_data['0'].keys())[:-1]:
@@ -138,22 +150,20 @@ def flux_scale_setjy():
     spws = np.asarray(spws)
     fluxes = np.asarray(fluxes)
     
-    import matplotlib.pyplot as plt
-    plt.figure(figsize=(8, 5))
-    plt.plot(spws, fluxes, 'o', color='black')
-    plt.xlabel('SPWids')
-    plt.ylabel(f"'Flux Density {flux_calibrator} [Jy]")
-    plt.grid()
-    plt.title('Flux density from setjy model')
-    plt.savefig(f"{plots_dir}{flux_calibrator}_flux_density_model.jpg", dpi=600)
-    plt.clf()
-    
-    # else:
-    #     flux_density_data = setjy(vis=vis, field=flux_calibrator, spw=all_spws,
-    #                                 scalebychan=True,
-    #                                 standard='manual', fluxdensity=flux_density,
-    #                                 listmodels=False, usescratch=True)
+    try:
+        logging.info(f"Plotting the fluxes for each spw")
+        plt.figure(figsize=(8, 5))
+        plt.plot(spws, fluxes, 'o', color='black')
+        plt.xlabel('SPWids')
+        plt.ylabel(f"'Flux Density {flux_calibrator} [Jy]")
+        plt.grid()
+        plt.title('Flux density from setjy model')
+        flux_plot = os.path.join(plots_dir,flux_calibrator+'_flux_density_model.pdf')
+        plt.savefig(flux_plot, dpi=600)
+        plt.clf()
 
-    # fluxes = flux_density
-    # spws = np.asarray(get_spwids(vis))
-    # return (flux_density_data, spws, fluxes)
+    except Exception as e:
+        logging.warning(f"Flux plot not generated due to: {e}")
+
+
+
