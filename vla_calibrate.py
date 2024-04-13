@@ -124,15 +124,23 @@ def flux_scale_setjy():
 
 
     # Get the frequency of the first spectral window
-    # fix model here
+    # fix model here -- needs a way to check which models are available
     spw = 0
-    spw0_freq = msmd.chanfreqs(0)
+    spw0_freq = msmd.chanfreqs(0)*1e-9
     
-    model = "3C286"
-    if spw0_freq*1e-9 < 8:
-        logging.info(f"Observations done in the C-band")
-        model = model+'_C.im'
+    model = "3C286" 
+    freq_ranges = {
+        (4, 8): "C",
+        (8, 12): "X",
+        (12, 18): "Ku",
+        (18,26.5):"K",
+            }
     
+    for range_,band in freq_ranges.items():
+        if spw0_freq>=range_[0] and spw0_freq<=range_[1]:
+            logging.info(f"Observations done in band: {band}")
+            logging.info("Will use model {model} for absolute flux calibration")
+            model = model+f'_{band}.im'
     try:
         logging.info(f"Performing absolute flux calibration using {model}")
         flux_density_data = casatasks.setjy(vis=vis, field=flux_calibrator, 
