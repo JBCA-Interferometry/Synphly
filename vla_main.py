@@ -3,20 +3,27 @@ from sys import argv
 import time, argparse
 from datetime import datetime
 import casatasks, casatools
+import casalogger
 import casaplotms
 import numpy as np
 import subprocess
 import matplotlib
 import configparser
+import matplotlib.pyplot as plt
 
 config = configparser.ConfigParser()
 config.read('vla_config.ini')
 
-logfile_name = datetime.now().strftime('vlapipe_%H_%M_%S_%d_%m_%Y.log')
-logging.basicConfig(filename=logfile_name,level=logging.DEBUG)
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-logging.getLogger('').addHandler(console)
+try:
+    console
+except:
+    logfile_name = datetime.now().strftime('vlapipe_%H_%M_%S_%d_%m_%Y.log')
+    logging.basicConfig(filename=logfile_name,level=logging.DEBUG)
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    logging.getLogger('').addHandler(console)
+    # import casalogger.__main__
+    casalogger.casalogger()
 
 
 # loading data
@@ -39,11 +46,15 @@ target = config.get('sources','target')
 
 # flagging
 do_flagging = config.getboolean('flagging','do_flagging')
+do_pre_flagging = config.getboolean('flagging','do_pre_flagging')
 use_aoflagger = config.getboolean('flagging','use_aoflagger')
 aoflagger_sif = config.get('flagging','aoflagger_sif')
 aoflagger_strategy = config.get('flagging','aoflagger_strategy')
 edge_channel_frac = config.getfloat('flagging','edge_channel_frac')
 
+# average
+do_average = config.getboolean('average','do_average')
+timebin_avg = config.get('average','timebin_avg')
 
 # calibrate
 do_split = config.getboolean('calibrate','do_split')
@@ -95,30 +106,41 @@ if load_data == True and 'load_data' not in steps_performed:
 if ms_info == True:
     try:
         logging.info(f"Getting ms information")
-        flux_calibrator,bandpass_calibrator,phase_calibrator,target = getms_info(vis_for_cal)
+        flux_calibrator,bandpass_calibrator,phase_calibrator,target = getms_info(vis=vis_for_cal)
     except Exception as e:
         logging.critical(F"Error {e} while executing func getms_info")
 
 if do_flagging == True:
     logging.info("Flagging data")
     # run_rflag()
-    initial_flagging()
+    if do_pre_flagging and 'pre_flagging' not in steps_performed:
+        pre_flagging(vis=vis_for_cal)
+        steps_performed.append('pre_flagging')
     # manual_flagging()
     if use_aoflagger == True:
-        try:
-            logging.info("Flagging with AOflagger")
-            run_aoflagger_sif()
-        except Exception as e:
-            logging.critical(f"Exception {e}  while running AOflagger")
+        if 'run_aoflagger' not in steps_performed:
+            try:
+                logging.info("Flagging with AOflagger")
+                if use_singularity == True:
+                    run_aoflagger_sif(vis=vis_for_cal)
+                else:
+                    run_aoflagger_nat(vis=vis_for_cal)
+                steps_performed.append('run_aoflagger')
+            except Exception as e:
+                logging.critical(f"Exception {e}  while running AOflagger")
     else:
         logging.info("Flagging using aoflagger not requested")
 
-if do_initial_cal == True:
+if do_initial_cal == True and 'initial_corrections' not in steps_performed:
     try:
         logging.info("Correcting antenna pos, gaincurves, sys power and atmospheric corrections")
-        initial_corrections()
+        init_tables, init_tables_dict = initial_corrections(vis=vis_for_cal)
+        steps_performed.append('initial_corrections')
     except Exception as e:
         logging.critical(f"Exception {e} while performing initial corrections")
 
-if do_setjy ==   True:
-    flux_scale_setjy()
+if do_setjy == True and 'flux_scale_setjy' not in steps_performed:
+    flux_density_data, spws, fluxes = flux_scale_setjy(vis=vis_for_cal,
+                                                       flux_density=None,
+                                                       model_image=None)
+    steps_performed.append('flux_scale_setjy')
