@@ -267,3 +267,22 @@ def flux_scale_setjy(vis,flux_density=None,model_image=None):
 
 
 
+
+def get_chan_spws_map(vis):
+    msmd = casatools.msmetadata()
+    msmd.open(vis)
+    bandwidth = msmd.bandwidths()
+    nspw = len(bandwidth)
+
+    chan_spw_skip_edge_map = np.empty(nspw, dtype=object)
+    for spw_id in range(nspw):
+        chan_spw_skip_edge_map[spw_id] = f"{spw_id}:{int(edge_channel_frac*msmd.nchan(spw_id))}~{int(((1-edge_channel_frac)*msmd.nchan(spw_id)))}"
+    spw_skip_edge = ','.join(chan_spw_skip_edge_map)
+
+    chan_spw_central_map = np.empty(nspw, dtype=object)
+    for spw_id in range(nspw):
+        chan_spw_central_map[spw_id] = (f"{spw_id}:"
+                                        f"{int(0.3*msmd.nchan(spw_id))}~{int(0.7*msmd.nchan(spw_id))}")
+    spw_central = ','.join(chan_spw_central_map)
+    msmd.done()
+    return(spw_skip_edge,spw_central)
