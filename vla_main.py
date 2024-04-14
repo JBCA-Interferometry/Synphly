@@ -24,6 +24,7 @@ load_data = config.getboolean('globals','load_data')
 experiment = config.get('globals','experiment_name')
 working_directory = config.get('globals', 'working_directory')
 asdm_file = config.get('globals','asdm_file')
+do_hanning = config.get('globals','do_hanning')
 singularity_path = config.get('globals','singularity_path')
 use_singularity = config.getboolean('globals','use_singularity')
 ms_info = config.getboolean('globals','ms_info')
@@ -59,7 +60,7 @@ exec(open('./vla_calibrate.py').read())
 
 # defining vis here
 
-vis = experiment+'.ms'
+vis = f"{working_directory}/{experiment}.ms"
 
 # if do_split == True:
 #     try: 
@@ -69,25 +70,32 @@ vis = experiment+'.ms'
 #         vis = outputvis
 #     except:
 #         logging.critical(f"Error occured while splitting")
-    
+
+try:
+    steps_performed
+except:
+    steps_performed = []
+
 try:
     set_working_dir()
 except Exception as e:
     logging.error(f"An error occured while creating the working directory: {e}")
 
 
-if load_data == True:
+if load_data == True and 'load_data' not in steps_performed:
     try:
         logging.info("Running CASA task importasdm")
-        importasdm()
+        vis_for_cal = importasdm()
         # getfields()
     except Exception as e:
         logging.critical(f"Exception {e} occured")
 
+    steps_performed.append('load_data')
+
 if ms_info == True:
     try:
         logging.info(f"Getting ms information")
-        getms_info()
+        flux_calibrator,bandpass_calibrator,phase_calibrator,target = getms_info(vis_for_cal)
     except Exception as e:
         logging.critical(F"Error {e} while executing func getms_info")
 
