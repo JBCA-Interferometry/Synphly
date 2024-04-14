@@ -1,4 +1,4 @@
-def run_aoflagger_sif():
+def run_aoflagger_sif(vis):
 
     """
     Executes singularity containers from python
@@ -35,6 +35,46 @@ def run_aoflagger_sif():
 
     except Exception as e:
         logging.critical(f"An error occurred: {e}")
+
+
+def run_aoflagger_nat(vis):
+    """
+    Executes aoflagger in native mode (this is for debugging purposes only).
+
+    """
+
+    if report_verbosity >= 2:
+        logging.info('Reporting data flagged before running aoflagger ...')
+        summary_before_aoflagger = casatasks.flagdata(vis=vis, mode='summary')
+        report_flag(summary_before_aoflagger, 'field')
+
+    strategy = (['aoflagger', '-v', '-j','6', '-direct-read', '-fields', '', '-strategy',
+                aoflagger_strategy,vis])
+
+    command_to_execute =  strategy
+    try:
+        logging.info("Executing: %s", ' '.join(command_to_execute))
+        process = subprocess.Popen(command_to_execute, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE, universal_newlines=True)
+        stdout, stderr = process.communicate()
+        logging.info("stdout: %s", stdout)
+        logging.info("stderr: %s", stderr)
+
+        return_code = process.returncode
+        if return_code == 0:
+            logging.info(f"Strategy executed successfully. Output:\n{stdout}")
+        else:
+            logging.critical(
+                f"Error executing strategy. Return code: {return_code}\nError message: {stderr}")
+
+        if report_verbosity >= 2:
+            logging.info('Reporting data flagged after running aoflagger ...')
+            summary_after_aoflagger = casatasks.flagdata(vis=vis, mode='summary')
+            report_flag(summary_after_aoflagger, 'field')
+
+    except Exception as e:
+        logging.critical(f"An error occurred: {e}")
+
 
 def all_calibrators():
 
@@ -132,15 +172,15 @@ def manual_flagging():
 
 
 
-def initial_flagging():
+def pre_flagging(vis):
 
     """
-    Initial flagging to the data.
+    Pre-flagging to the data.
     """
     flags_dir = os.path.join(working_directory).rstrip('/')+'/'+'flags'
     plots_dir = os.path.join(working_directory).rstrip('/')+'/'+ 'plots'
 
-    initial_flagging_starttime = time.time()
+    pre_flagging_starttime = time.time()
 
     try:
         logging.info('Creating flagbackup file for original ms')
@@ -280,9 +320,9 @@ def initial_flagging():
     report_flag(summary_pre_cal, 'scan')
     # report_flag(summary_pre_cal,'antenna')
 
-    initial_flagging_endtime = time.time() 
-    initial_flagging_time = initial_flagging_endtime - initial_flagging_starttime 
+    pre_flagging_endtime = time.time() 
+    pre_flagging_time = pre_flagging_endtime - pre_flagging_starttime 
     
-    logging.info(f"Initial flagging took {initial_flagging_time/ 60:.2f} minutes")
+    logging.info(f"Initial flagging took {pre_flagging_time/ 60:.2f} minutes")
     
     """Remember to flag edge channels in each spw"""
