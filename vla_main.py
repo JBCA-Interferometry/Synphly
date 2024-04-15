@@ -26,6 +26,7 @@ except:
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
     logging.getLogger('').addHandler(console)
+    logging.getLogger('matplotlib').setLevel(logging.WARNING)
     # import casalogger.__main__
     casalogger.casalogger()
 

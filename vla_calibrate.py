@@ -433,64 +433,64 @@ def bandpass_cal(i=1, do_plots=False):
     #                            table_type=str(i) + table_stage + solint,
     #                            kind='', xaxis='time', yaxis='phase', fields='')
 
-    table_stage = '_bpcal_ap_'
-    solint = bp_solint_G_ap
-    gaintables_temp_bpcal_ap = run_gaincal(vis=vis_for_cal,
-                                           field=bandpass_calibrator,
-                                           gaintables=gaintables_temp_bpcal_p,
-                                           scan='', refant=ref_antenna,
-                                           spw=spw_central, calmode='ap', gaintype='G',
-                                           solint=solint, overwrite=overwrite,
-                                           i=i, table_stage=table_stage,
-                                           minsnr=minsnr
-                                           )
-    gain_tables_dict['bp_ap'] = gaintables_temp_bpcal_ap[-1]
-
-
-    calibration_table_plot(table=gain_tables_dict['bp_ap'],
-                           stage='calibration',
-                           table_type=str(i) + table_stage + solint,
-                           kind='', xaxis='time', yaxis='phase', fields='')
-
-    calibration_table_plot(table=gain_tables_dict['bp_ap'],
-                           stage='calibration',
-                           table_type=str(i) + table_stage + solint,
-                           kind='', xaxis='time', yaxis='amp', fields='')
-
-
-    table_stage = '_bpcal_ap_inf_'
-    solint = 'inf'
-    gaintables_temp_bpcal_ap_inf = run_gaincal(vis=vis_for_cal,
-                                           field=bandpass_calibrator,
-                                           gaintables=gaintables_temp_bpcal_p,
-                                           scan='', refant=ref_antenna,
-                                           spw=spw_central, calmode='ap', gaintype='G',
-                                           solint=solint, overwrite=False,
-                                           i=i, table_stage=table_stage,
-                                           minsnr=minsnr
-                                           )
-    gain_tables_dict['bp_ap_inf'] = gaintables_temp_bpcal_ap_inf[-1]
-
-
-    calibration_table_plot(table=gain_tables_dict['bp_ap_inf'],
-                           stage='calibration',
-                           table_type=str(i) + table_stage + solint,
-                           kind='', xaxis='time', yaxis='phase', fields='')
-
-    calibration_table_plot(table=gain_tables_dict['bp_ap_inf'],
-                           stage='calibration',
-                           table_type=str(i) + table_stage + solint,
-                           kind='', xaxis='time', yaxis='amp', fields='')
+    # table_stage = '_bpcal_ap_'
+    # solint = bp_solint_G_ap
+    # gaintables_temp_bpcal_ap = run_gaincal(vis=vis_for_cal,
+    #                                        field=bandpass_calibrator,
+    #                                        gaintables=gaintables_temp_bpcal_p,
+    #                                        scan='', refant=ref_antenna,
+    #                                        spw=spw_central, calmode='ap', gaintype='G',
+    #                                        solint=solint, overwrite=overwrite,
+    #                                        i=i, table_stage=table_stage,
+    #                                        minsnr=minsnr
+    #                                        )
+    # gain_tables_dict['bp_ap'] = gaintables_temp_bpcal_ap[-1]
+    #
+    #
+    # calibration_table_plot(table=gain_tables_dict['bp_ap'],
+    #                        stage='calibration',
+    #                        table_type=str(i) + table_stage + solint,
+    #                        kind='', xaxis='time', yaxis='phase', fields='')
+    #
+    # calibration_table_plot(table=gain_tables_dict['bp_ap'],
+    #                        stage='calibration',
+    #                        table_type=str(i) + table_stage + solint,
+    #                        kind='', xaxis='time', yaxis='amp', fields='')
+    #
+    #
+    # table_stage = '_bpcal_ap_inf_'
+    # solint = 'inf'
+    # gaintables_temp_bpcal_ap_inf = run_gaincal(vis=vis_for_cal,
+    #                                        field=bandpass_calibrator,
+    #                                        gaintables=gaintables_temp_bpcal_p,
+    #                                        scan='', refant=ref_antenna,
+    #                                        spw=spw_central, calmode='ap', gaintype='G',
+    #                                        solint=solint, overwrite=False,
+    #                                        i=i, table_stage=table_stage,
+    #                                        minsnr=minsnr
+    #                                        )
+    # gain_tables_dict['bp_ap_inf'] = gaintables_temp_bpcal_ap_inf[-1]
+    #
+    #
+    # calibration_table_plot(table=gain_tables_dict['bp_ap_inf'],
+    #                        stage='calibration',
+    #                        table_type=str(i) + table_stage + solint,
+    #                        kind='', xaxis='time', yaxis='phase', fields='')
+    #
+    # calibration_table_plot(table=gain_tables_dict['bp_ap_inf'],
+    #                        stage='calibration',
+    #                        table_type=str(i) + table_stage + solint,
+    #                        kind='', xaxis='time', yaxis='amp', fields='')
 
     table_stage = '_bpcal_BP_'
     solint = bp_solint_BP
     gaintables_temp_bpcal_BP = run_bandpass(vis=vis_for_cal,
                                             field=bandpass_calibrator,
-                                            gaintables=gaintables_temp_bpcal_ap_inf,
+                                            gaintables=gaintables_temp_bpcal_p,
                                             combine='scan', bandtype='B',
                                             scan='', refant=ref_antenna,
                                             spw='*', overwrite=True,
-                                            solint=solint, solnorm=True,
+                                            solint=solint, solnorm=False,
                                             i=i, table_stage=table_stage,
                                             minsnr=minsnr
                                             )
@@ -521,7 +521,7 @@ def bandpass_cal(i=1, do_plots=False):
     pre_cal_tables_temp = [gain_tables_dict['bp_K'],
                            gain_tables_dict['bp_p'],
                            # gain_tables_dict['bp_ap'],
-                           gain_tables_dict['bp_ap_inf'],
+                           # gain_tables_dict['bp_ap_inf'],
                            gain_tables_dict['bp_BP_inf']]
 
 
@@ -567,3 +567,6 @@ def bandpass_cal(i=1, do_plots=False):
 
     return (gaintables_apply_BP, gainfield_bandpass_apply,
             gain_tables_dict,gaintables_apply_BP_dict,gainfields_apply_BP_dict)
+
+
+
