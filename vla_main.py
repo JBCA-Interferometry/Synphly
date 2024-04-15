@@ -11,6 +11,10 @@ import matplotlib
 import configparser
 import matplotlib.pyplot as plt
 
+msmd = casatools.msmetadata()
+ms = casatools.ms()
+tb = casatools.table()
+
 config = configparser.ConfigParser()
 config.read('vla_config.ini')
 
@@ -31,7 +35,7 @@ load_data = config.getboolean('globals','load_data')
 experiment = config.get('globals','experiment_name')
 working_directory = config.get('globals', 'working_directory')
 asdm_file = config.get('globals','asdm_file')
-do_hanning = config.get('globals','do_hanning')
+do_hanning = config.getboolean('globals','do_hanning')
 singularity_path = config.get('globals','singularity_path')
 use_singularity = config.getboolean('globals','use_singularity')
 ms_info = config.getboolean('globals','ms_info')
@@ -60,9 +64,19 @@ timebin_avg = config.get('average','timebin_avg')
 do_split = config.getboolean('calibrate','do_split')
 timebin = config.getfloat('calibrate','timebin')
 width = config.getint('calibrate','width')
-solint = config.getfloat('calibrate','solint')
+solint = config.get('calibrate','solint')
 do_initial_cal = config.getboolean('calibrate','do_initial_cal')
 do_setjy = config.getboolean('calibrate','do_setjy')
+_refant = config.get('calibrate','refant')
+do_refant = config.getboolean('calibrate','do_refant')
+if _refant == 'None':
+    refant = None
+bp_solint_K = config.get('calibrate','bp_solint_K')
+bp_solint_G_p = config.get('calibrate','bp_solint_G_p')
+bp_solint_G_ap = config.get('calibrate','bp_solint_G_ap')
+bp_solint_BP = config.get('calibrate','bp_solint_BP')
+minsnr = config.getfloat('calibrate','minsnr')
+do_bandpass = config.getboolean('calibrate','do_bandpass')
 
 
 exec(open("./vla_functions.py").read())
@@ -107,6 +121,9 @@ if ms_info == True:
     try:
         logging.info(f"Getting ms information")
         flux_calibrator,bandpass_calibrator,phase_calibrator,target = getms_info(vis=vis_for_cal)
+
+        calibrators_all, calibrators_all_arr, all_fields_str, all_fields_arr, target_fields_arr = \
+            (format_fields(flux_calibrator,bandpass_calibrator,phase_calibrator,target))
     except Exception as e:
         logging.critical(F"Error {e} while executing func getms_info")
 
@@ -144,3 +161,28 @@ if do_setjy == True and 'flux_scale_setjy' not in steps_performed:
                                                        flux_density=None,
                                                        model_image=None)
     steps_performed.append('flux_scale_setjy')
+
+if do_refant and 'select_refant' not in steps_performed:
+    try:
+        logging.info("Selecting ref antenna.")
+        if refant is None:
+            logging.info("No refant specified. Finding refant by fraction of good solutions.")
+            tablename_refant = f"{working_directory}/calibration/find_refant.phase"
+            ref_antenna = find_refant(msfile=vis_for_cal, field=calibrators_all,
+                                      tablename=tablename_refant)
+            ref_antenna_list = ref_antenna.split(',')
+        else:
+            logging.info("Using refant specified in the config file.")
+            ref_antenna = refant
+        steps_performed.append('select_refant')
+    except Exception as e:
+        logging.critical(f"Exception {e} while computing ref antenna.")
+
+if do_bandpass == True and 'bandpass' not in steps_performed:
+    try:
+        logging.info("Running bandpass calibration")
+        (gaintables_apply_BP, gainfield_bandpass_apply, gain_tables_dict,
+         gaintables_apply_BP_dict, gainfields_apply_BP_dict) = bandpass_cal(i=1)
+        steps_performed.append('bandpass')
+    except Exception as e:
+        logging.critical(f"Exception {e} while running bandpass calibration")

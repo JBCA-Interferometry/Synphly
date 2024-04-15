@@ -76,20 +76,6 @@ def run_aoflagger_nat(vis):
         logging.critical(f"An error occurred: {e}")
 
 
-def all_calibrators():
-
-    """"""
-    if flux_calibrator != bandpass_calibrator:
-        calibrators_all = flux_calibrator + ',' + bandpass_calibrator + ',' + phase_calibrator
-    else:
-        calibrators_all = flux_calibrator +  ',' + phase_calibrator
-
-
-    calibrators_all_arr = list(np.unique(calibrators_all.split(',')))
-
-    all_fields_str = calibrators_all + ',' + target
-    all_fields = list(np.unique((calibrators_all + ',' + target).split(',')))
-
 def report_flag(summary, axis):
     logging.info("REPORTING FLAGGING STATS")
     try:
