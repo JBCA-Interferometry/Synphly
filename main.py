@@ -42,9 +42,9 @@ except Exception as e:
     print(f"Exception {e} occurred")
 
 
-exec(open("./data_reduction/helper_functions.py").read())
-exec(open("./data_reduction/flagging.py").read())
-exec(open('./data_reduction/calibrate.py').read())
+exec(open("./data_calibration/helper_functions.py").read())
+exec(open("./data_calibration/flagging.py").read())
+exec(open('./data_calibration/calibrate.py').read())
 
 # loading data
 load_data = config.getboolean('globals','load_data')
