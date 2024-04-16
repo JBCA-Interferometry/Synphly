@@ -1,0 +1,22 @@
+INFO:root:Working directory /raid1/scratch/kelvinw/m15_data/vla/working_directory already exists
+INFO:root:Dir /raid1/scratch/kelvinw/m15_data/vla/working_directory/flags exists. Will not create one
+INFO:root:Dir /raid1/scratch/kelvinw/m15_data/vla/working_directory/calibration exists. Will not create one
+INFO:root:Dir /raid1/scratch/kelvinw/m15_data/vla/working_directory/plots exists. Will not create one
+INFO:root:Running CASA task importasdm
+INFO:root:/raid1/scratch/kelvinw/m15_data/vla/working_directory/11A-269.ms exists, will not make a new one
+INFO:root:Listobs file /raid1/scratch/kelvinw/m15_data/vla/working_directory/11A-269_listobs.txt exists
+INFO:root:Exec time for data handle/conversion took 0.00 minutes
+INFO:root:Getting ms information
+INFO:root:0137+331=3C48 found in /raid1/scratch/kelvinw/m15_data/vla/working_directory/11A-269.ms
+INFO:root:0137+331=3C48 found in /raid1/scratch/kelvinw/m15_data/vla/working_directory/11A-269.ms
+INFO:root:J2139+1423 found in /raid1/scratch/kelvinw/m15_data/vla/working_directory/11A-269.ms
+INFO:root:M 15 X-2 found in /raid1/scratch/kelvinw/m15_data/vla/working_directory/11A-269.ms
+INFO:root:Scans [1, 2, 3, 4, 5, 6] are observed on 0137+331=3C48
+INFO:root:Scans [1, 2, 3, 4, 5, 6] are observed on 0137+331=3C48
+INFO:root:Scans [7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27] are observed on J2139+1423
+INFO:root:Scans [8, 10, 12, 14, 16, 18, 20, 22, 24, 26] are observed on M 15 X-2
+INFO:root:Total channels 64
+INFO:root:Data observed over a bandwidth of 2304.0 MHz over 18 spw each 128.0 MHz in size and divided into 64 channels
+CRITICAL:root:Error local variable '_flux_calibrator' referenced before assignment while executing func getms_info
+INFO:root:Selecting ref antenna.
+CRITICAL:root:Exception name 'refant' is not defined while computing ref antenna.

@@ -2,41 +2,49 @@ import os, glob, re, logging
 from sys import argv
 import time, argparse
 from datetime import datetime
+import casatasks, casatools
+import casalogger
+import casaplotms
 import numpy as np
 import subprocess
 import matplotlib
 import configparser
 import matplotlib.pyplot as plt
 
-try:
-    import casatasks, casatools, casaplotms
-    from casaplotms import plotms
-    from casatasks import gaincal, gencal, applycal, bandpass, split, importasdm
-    from casatasks import flagdata, flagmanager, plotants, plotweather, hanningsmooth
-    from casatasks import clearcal, delmod, setjy, fluxscale, tclean, imhead, listobs
-    import casalogger
-    msmd = casatools.msmetadata()
-    ms = casatools.ms()
-    tb = casatools.table()
-except Exception as e:
-    print(f"Error {e} while importing casa utilities."
-          f"Are you inside a CASA environment?")
+msmd = casatools.msmetadata()
+ms = casatools.ms()
+tb = casatools.table()
 
 config = configparser.ConfigParser()
-config.read('vla_config.ini')
+config.read('config.ini')
+
 
 try:
-    console
-except:
-    logfile_name = datetime.now().strftime('vlapipe_%H_%M_%S_%d_%m_%Y.log')
-    logging.basicConfig(filename=logfile_name,level=logging.DEBUG)
+    print("Creating log dir")
+    log_dir = os.path.join(os.getcwd(), 'logs')
+    
+    if not os.path.exists(log_dir):
+        print(f"Log directory '{log_dir}' does not exist, creating it...")
+        os.makedirs(log_dir, exist_ok=True)
+    else:
+        print(f"Log directory '{log_dir}' exists")
+
+    logfile_name = datetime.now().strftime('jvla_pipe_%H:%M:%S_%d:%m:%Y.log')
+    filename = os.path.join(log_dir, logfile_name)
+    
+    logging.basicConfig(filename=filename, level=logging.DEBUG)
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
     logging.getLogger('').addHandler(console)
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
-    # import casalogger.__main__
-    casalogger.casalogger()
 
+except Exception as e:
+    print(f"Exception {e} occurred")
+
+
+exec(open("./data_reduction/helper_functions.py").read())
+exec(open("./data_reduction/flagging.py").read())
+exec(open('./data_reduction/calibrate.py').read())
 
 # loading data
 load_data = config.getboolean('globals','load_data')
@@ -91,10 +99,6 @@ all_solint_short_p = config.get('calibrate','all_solint_short_p')
 all_solint_short_ap = config.get('calibrate','all_solint_short_ap')
 all_solint_long_p = config.get('calibrate','all_solint_long_p')
 all_solint_inf_ap = config.get('calibrate','all_solint_inf_ap')
-
-exec(open("./vla_functions.py").read())
-exec(open("./vla_flagging.py").read())
-exec(open('./vla_calibrate.py').read())
 
 # defining vis here
 
@@ -194,6 +198,7 @@ if do_refant and 'select_refant' not in steps_performed:
     except Exception as e:
         logging.critical(f"Exception {e} while computing ref antenna.")
 
+
 if do_bandpass_1st_run == True and 'bandpass_1st' not in steps_performed:
     try:
         logging.info("Running bandpass calibration")
@@ -202,4 +207,3 @@ if do_bandpass_1st_run == True and 'bandpass_1st' not in steps_performed:
         steps_performed.append('bandpass')
     except Exception as e:
         logging.critical(f"Exception {e} while running bandpass calibration")
-
