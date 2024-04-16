@@ -42,7 +42,7 @@ def importasdm():
     if not os.path.exists(vis):
         try:
             logging.info(f"Making {vis}")
-            casatasks.importasdm(asdm=asdm_file, vis=vis,
+            importasdm(asdm=asdm_file, vis=vis,
                     process_syspower=True, process_caldevice=True, process_pointing=True,
                     process_flags=True, applyflags=True, savecmds=True, flagbackup=True,
                     verbose=True, with_pointing_correction=True,
@@ -53,7 +53,7 @@ def importasdm():
     else:
         logging.info(f"{vis} exists, will not make a new one")
 
-    ms = casatools.ms()
+    # ms = casatools.ms()
     """ Writes the verbose output of the task listobs """
 
     listfile = vis.replace(".ms","_listobs.txt")
@@ -78,7 +78,7 @@ def importasdm():
         if not os.path.exists(vis_hs):
             try:
                 logging.info(f"Running Hanning smoothing on {vis}")
-                casatasks.hanningsmooth(vis=vis, outputvis=vis_hs)
+                hanningsmooth(vis=vis, outputvis=vis_hs)
                 logging.info(f"Hanning smoothing done on {vis}")
                 logging.info(f"Setting to vis file to Hanning smoothed version [*_hs.ms]")
                 vis_for_cal = vis_hs
@@ -111,7 +111,7 @@ def getms_info(vis):
 
     """
 
-    msmd = casatools.msmetadata()
+    # msmd = casatools.msmetadata()
 
     msmd.open(vis)
     fieldnames = msmd.fieldnames()
@@ -124,7 +124,7 @@ def getms_info(vis):
 
     if flux_calibrator == '':
         logging.info("Flux calibrator not provided. Will get from the ms.")
-        flux_intent = casatasks.listobs(vis=vis, intent='*CALIBRATE_FLUX*')
+        flux_intent = listobs(vis=vis, intent='*CALIBRATE_FLUX*')
         _, flux_field_name = get_fields(flux_intent, 'field')
         sources.extend(flux_field_name)
         _flux_calibrator = ','.join(flux_field_name)
@@ -134,7 +134,7 @@ def getms_info(vis):
 
     if bandpass_calibrator == '':
         logging.info("Bandpass calibrator not provided. Will get from the ms.")
-        bandpass_intent = casatasks.listobs(vis=vis, intent='*CALIBRATE_BANDPASS*')
+        bandpass_intent = listobs(vis=vis, intent='*CALIBRATE_BANDPASS*')
         _, bandpass_field_name = get_fields(bandpass_intent, 'field')
         sources.extend(bandpass_field_name)
         _bandpass_calibrator = ','.join(bandpass_field_name)
@@ -144,7 +144,7 @@ def getms_info(vis):
 
     if phase_calibrator == '':
         logging.info("Phase calibrator not provided. Will get from the ms.")
-        phase_intent = casatasks.listobs(vis=vis, intent='*CALIBRATE_PHASE*')
+        phase_intent = listobs(vis=vis, intent='*CALIBRATE_PHASE*')
         _, phase_field_name = get_fields(phase_intent, 'field')
         sources.extend(phase_field_name)
         _phase_calibrator = ','.join(phase_field_name)
@@ -154,7 +154,7 @@ def getms_info(vis):
 
     if target == '':
         logging.info("Target not provided. Will get from the ms.")
-        target_intent = casatasks.listobs(vis=vis, intent='*TARGET*')
+        target_intent = listobs(vis=vis, intent='*TARGET*')
         _, target_field_name = get_fields(target_intent, 'field')
         sources.extend(target_field_name)
         _target = ','.join(target_field_name)
@@ -221,7 +221,7 @@ def split():
     try:
         if not os.path.exists(outputvis):
             logging.info(f"Averaging every {timebin}s and {width} channels")
-            casatasks.split(
+            split(
                 vis = vis, outputvis = outputvis,
                 timebin = timebin, width = width,
                 )
@@ -239,7 +239,7 @@ def find_refant(msfile, field, tablename):
     """
     # Find phase solutions per scan:
     if not os.path.exists(tablename):
-        casatasks.gaincal(vis=msfile,
+        gaincal(vis=msfile,
                           caltable=tablename,
                           field=field,
                           refantmode='flex',
@@ -313,7 +313,7 @@ def calibration_table_plot(table, stage='calibration',
         # plotfile = base_path + 'plots/' + stage + '/' + table_type + '_' + xaxis + '_' + yaxis + '_field_' + str(
         #     'all') + '_ant_' + antenna + '_spw_' + spw + '.jpg'
         # if not os.path.exists(plotfile):
-        casaplotms.plotms(vis=table, xaxis=xaxis, yaxis=yaxis, field='',
+        plotms(vis=table, xaxis=xaxis, yaxis=yaxis, field='',
                           gridcols=1, gridrows=1, coloraxis='spw', antenna=antenna, spw=spw,
                           plotrange=plotrange,
                           width=2000, height=800, showgui=False, overwrite=True, dpi=1200,
@@ -326,7 +326,7 @@ def calibration_table_plot(table, stage='calibration',
                 # plotfile = base_path + 'plots/' + stage + '/' + table_type + '_' + xaxis + '_' + yaxis + '_field_' + str(
                 #     FIELD) + '_ant_' + antenna + '_spw_' + spw + '.jpg'
                 # if not os.path.exists(plotfile):
-                casaplotms.plotms(vis=table, xaxis=xaxis, yaxis=yaxis, field=FIELD,
+                plotms(vis=table, xaxis=xaxis, yaxis=yaxis, field=FIELD,
                                   # gridcols=4,gridrows=4,coloraxis='spw',antenna='',iteraxis='antenna',
                                   # width=2048,height=1280,dpi=256,overwrite=True,showgui=False,
                                   gridcols=1, gridrows=1, coloraxis='spw', antenna=antenna, spw=spw,
@@ -380,7 +380,7 @@ def make_plots_stages(vis,stage='after', kind='',
     for FIELD in FIELDS:
         # print('Plotting Chan vs Amp: Field')
         plotfile = f"{plots_dir}/{stage}/time_amp/time_amp_avg_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
-        casaplotms.plotms(vis=vis, xaxis='time', yaxis='amp', ydatacolumn=ydatacolumn,
+        plotms(vis=vis, xaxis='time', yaxis='amp', ydatacolumn=ydatacolumn,
                           avgchannel='9999', coloraxis='spw', field=FIELD,
                           xselfscale=True, yselfscale=True, correlation='RR,LL',
                           title='Time vs Amp, ' + str(FIELD), avgantenna=avgantenna,
@@ -389,7 +389,7 @@ def make_plots_stages(vis,stage='after', kind='',
                           highres=True,
                           plotfile=plotfile)
         plotfile = f"{plots_dir}/{stage}/freq_amp/freq_amp_avg_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
-        casaplotms.plotms(vis=vis, xaxis='freq', yaxis='amp', ydatacolumn=ydatacolumn,
+        plotms(vis=vis, xaxis='freq', yaxis='amp', ydatacolumn=ydatacolumn,
                           avgtime='9999', coloraxis='spw', field=FIELD,
                           xselfscale=True, yselfscale=True, correlation='RR,LL',
                           title='Freq vs Amp, ' + str(FIELD), avgantenna=avgantenna,
@@ -399,7 +399,7 @@ def make_plots_stages(vis,stage='after', kind='',
                           highres=True,
                           plotfile=plotfile)
         plotfile = f"{plots_dir}/{stage}/time_phase/time_phase_avg_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
-        casaplotms.plotms(vis=vis, xaxis='time', yaxis='phase', ydatacolumn=ydatacolumn, correlation='RR,LL',
+        plotms(vis=vis, xaxis='time', yaxis='phase', ydatacolumn=ydatacolumn, correlation='RR,LL',
                           avgchannel='9999', coloraxis='spw', field=FIELD,
                           title='Time vs Phase, ' + str(FIELD), avgantenna=avgantenna,
                           gridrows=1, gridcols=1, width=2000, height=800, showgui=False,
@@ -408,7 +408,7 @@ def make_plots_stages(vis,stage='after', kind='',
                           plotrange=[-1, -1, -180, 180],
                           plotfile=plotfile)
         plotfile = f"{plots_dir}/{stage}/uvwave_amp_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
-        casaplotms.plotms(vis=vis, xaxis='uvwave', yaxis='amp', field=FIELD,
+        plotms(vis=vis, xaxis='uvwave', yaxis='amp', field=FIELD,
                           coloraxis='spw', correlation='RR,LL',
                           xselfscale=True, yselfscale=True,
                           ydatacolumn=ydatacolumn, avgchannel='9999', avgtime='9999',
