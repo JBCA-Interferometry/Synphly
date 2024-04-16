@@ -31,7 +31,7 @@ def set_working_dir():
         except Exception as e:
             logging.error(f"Error {e} occured while creating {folder}")
 
-def importasdm():
+def import_data():
 
     """
     
