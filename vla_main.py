@@ -2,18 +2,25 @@ import os, glob, re, logging
 from sys import argv
 import time, argparse
 from datetime import datetime
-import casatasks, casatools
-import casalogger
-import casaplotms
 import numpy as np
 import subprocess
 import matplotlib
 import configparser
 import matplotlib.pyplot as plt
 
-msmd = casatools.msmetadata()
-ms = casatools.ms()
-tb = casatools.table()
+try:
+    import casatasks, casatools, casaplotms
+    from casaplotms import plotms
+    from casatasks import gaincal, gencal, applycal, bandpass, split, importasdm
+    from casatasks import flagdata, flagmanager, plotants, plotweather, hanningsmooth
+    from casatasks import clearcal, delmod, setjy, fluxscale, tclean, imhead, listobs
+    import casalogger
+    msmd = casatools.msmetadata()
+    ms = casatools.ms()
+    tb = casatools.table()
+except Exception as e:
+    print(f"Error {e} while importing casa utilities."
+          f"Are you inside a CASA environment?")
 
 config = configparser.ConfigParser()
 config.read('vla_config.ini')
@@ -52,6 +59,7 @@ target = config.get('sources','target')
 # flagging
 do_flagging = config.getboolean('flagging','do_flagging')
 do_pre_flagging = config.getboolean('flagging','do_pre_flagging')
+do_tfcrop_raw = config.getboolean('flagging','do_tfcrop_raw')
 use_aoflagger = config.getboolean('flagging','use_aoflagger')
 aoflagger_sif = config.get('flagging','aoflagger_sif')
 aoflagger_strategy = config.get('flagging','aoflagger_strategy')
@@ -77,8 +85,12 @@ bp_solint_G_p = config.get('calibrate','bp_solint_G_p')
 bp_solint_G_ap = config.get('calibrate','bp_solint_G_ap')
 bp_solint_BP = config.get('calibrate','bp_solint_BP')
 minsnr = config.getfloat('calibrate','minsnr')
-do_bandpass = config.getboolean('calibrate','do_bandpass')
-
+do_bandpass_1st_run = config.getboolean('calibrate','do_bandpass_1st_run')
+do_all_phases = config.getboolean('calibrate','do_all_phases')
+all_solint_short_p = config.get('calibrate','all_solint_short_p')
+all_solint_short_ap = config.get('calibrate','all_solint_short_ap')
+all_solint_long_p = config.get('calibrate','all_solint_long_p')
+all_solint_inf_ap = config.get('calibrate','all_solint_inf_ap')
 
 exec(open("./vla_functions.py").read())
 exec(open("./vla_flagging.py").read())
@@ -134,6 +146,9 @@ if do_flagging == True:
     if do_pre_flagging and 'pre_flagging' not in steps_performed:
         pre_flagging(vis=vis_for_cal)
         steps_performed.append('pre_flagging')
+    if do_tfcrop_raw and 'tfcrop_raw' not in steps_performed:
+        tfcrop_raw(vis=vis_for_cal,field=calibrators_all)
+        steps_performed.append('tfcrop_raw')
     # manual_flagging()
     if use_aoflagger == True:
         if 'run_aoflagger' not in steps_performed:
@@ -179,11 +194,12 @@ if do_refant and 'select_refant' not in steps_performed:
     except Exception as e:
         logging.critical(f"Exception {e} while computing ref antenna.")
 
-if do_bandpass == True and 'bandpass' not in steps_performed:
+if do_bandpass_1st_run == True and 'bandpass_1st' not in steps_performed:
     try:
         logging.info("Running bandpass calibration")
-        (gaintables_apply_BP, gainfield_bandpass_apply, gain_tables_dict,
-         gaintables_apply_BP_dict, gainfields_apply_BP_dict) = bandpass_cal(i=1)
+        (gaintables_apply_BP_1, gainfield_bandpass_apply_1, gain_tables_BP_dict_1,
+         gaintables_apply_BP_dict_1,gainfields_apply_BP_dict_1) = bandpass_cal(i=1)
         steps_performed.append('bandpass')
     except Exception as e:
         logging.critical(f"Exception {e} while running bandpass calibration")
+
