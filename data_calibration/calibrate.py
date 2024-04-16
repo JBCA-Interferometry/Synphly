@@ -123,22 +123,24 @@ def flux_scale_setjy(vis,flux_density=None,model_image=None):
     Sets the flux scale
     """
 
-    # try:
-    #     logging.info("Clearing model column")
-    #     delmod(vis, otf=True, scr=False)
-    #     logging.info("Successfully deleted model column")
-    # except Exception as e:
-    #     logging.critical(f"Exception {e} while deleting model column")
-    #
-    # try:
-    #     logging.info("Re-initialize the calibration")
-    #     clearcal(vis)
-    #     logging.info("Successfully cleared the calibration")
-    # except Exception as e:
-    #     logging.critical(f"Exception {e} while clearing calibrations")
+    try:
+        logging.info("Clearing model column")
+        delmod(vis, otf=True, scr=False)
+        logging.info("Successfully deleted model column")
+    except Exception as e:
+        logging.critical(f"Exception {e} while deleting model column")
+
+    try:
+        logging.info("Re-initialize the calibration")
+        clearcal(vis)
+        logging.info("Successfully cleared the calibration")
+    except Exception as e:
+        logging.critical(f"Exception {e} while clearing calibrations")
 
     logging.info(f'Setting the flux scaling using {flux_calibrator}')
-
+    if os.path.exists(vis + '.flagversions/flags.flags_after_tfcrop_init/'):
+        logging.info(f"Restoring flags from {vis}.flagversions/flags.flags_after_tfcrop_init/")
+        flagmanager(vis=vis, mode='restore', versionname='flags_after_tfcrop_init')
 
     # Get the frequency of the first spectral window
     # fix model here -- needs a way to check which models are available
