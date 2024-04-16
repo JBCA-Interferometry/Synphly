@@ -101,16 +101,16 @@ def initial_corrections(vis):
 
     #  switched power
 
-    try:
-        logging.info("Generating cal solutions for spwpow")
-        caltable = f"{calibration_dir}/{os.path.basename(vis.replace('.ms', '_spwpow.tb'))}"
-        # os.system(f"rm -r {caltable}")
-        if not os.path.exists(caltable):
-            gencal(vis=vis,caltable=caltable, caltype='swpow')
-        init_tables.append(caltable)
-        init_tables_dict['swpow'] = caltable
-    except Exception as e:
-        logging.critical(f"Exception {e} while generating {caltable}")
+    # try:
+    #     logging.info("Generating cal solutions for spwpow")
+    #     caltable = f"{calibration_dir}/{os.path.basename(vis.replace('.ms', '_spwpow.tb'))}"
+    #     # os.system(f"rm -r {caltable}")
+    #     if not os.path.exists(caltable):
+    #         gencal(vis=vis,caltable=caltable, caltype='swpow')
+    #     init_tables.append(caltable)
+    #     init_tables_dict['swpow'] = caltable
+    # except Exception as e:
+    #     logging.critical(f"Exception {e} while generating {caltable}")
 
     initial_corrections_endtime = time.time() 
     initial_corrections_time = initial_corrections_endtime- initial_corrections_starttime
