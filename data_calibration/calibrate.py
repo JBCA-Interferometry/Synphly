@@ -344,7 +344,7 @@ def run_gaincal(vis, field, scan,
         logging.critical(f"Exception {e} while generating {caltable}")
 
 
-def get_chan_spws_map(vis):
+def get_chan_spws_map(vis,compute_edge_for_flagging=False):
     msmd.open(vis)
     bandwidth = msmd.bandwidths()
     nspw = len(bandwidth)
@@ -361,8 +361,20 @@ def get_chan_spws_map(vis):
                                         f"{int(0.2*msmd.nchan(spw_id))}~"
                                         f"{int(0.8*msmd.nchan(spw_id))}")
     spw_central = ','.join(chan_spw_central_map)
+
+    if compute_edge_for_flagging:
+        chan_spw_edge_flag = np.empty(nspw, dtype=object)
+        for spw_id in range(nspw):
+            chan_spw_edge_flag[spw_id] = \
+                (f"{spw_id}:0~{int(edge_channel_flag_frac*msmd.nchan(spw_id))},"
+                 f"{spw_id}:{int((1-edge_channel_flag_frac)*msmd.nchan(spw_id))}~"
+                 f"{msmd.nchan(spw_id)-1}")
+        chan_spw_edge_flag = ','.join(chan_spw_edge_flag)
     msmd.done()
-    return(spw_skip_edge,spw_central)
+    if compute_edge_for_flagging:
+        return(spw_skip_edge,spw_central,chan_spw_edge_flag)
+    else:
+        return(spw_skip_edge,spw_central)
 
 def bandpass_cal(i=1, do_plots=False):
     if do_plots:

@@ -264,6 +264,14 @@ def pre_flagging(vis):
     except Exception as e:
         logging.error(f"Exception {e} encountered while backing up flags")
 
+    if do_flag_edge_channels == True:
+        logging.info('Flagging edge channels')
+        _, _, chan_spw_edge_flag = get_chan_spws_map(vis,
+                                                     compute_edge_for_flagging=True)
+        flagdata(vis=vis, mode='manual', spw=chan_spw_edge_flag,
+                reason='edge_channels', flagbackup=False, action='apply',
+                name='edge_channels')
+
     # Further flagging (manual inspections)
 
     # if apply_tfcrop_init == True:
