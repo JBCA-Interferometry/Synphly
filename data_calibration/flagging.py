@@ -215,14 +215,14 @@ def pre_flagging(vis):
         # report_flag(summary_autocorr,'scan')
         # report_flag(summary_autocorr,'antenna')
     try:   
-        logging.info('Shadow flagging the data')
+        logging.info('++==>> Shadow flagging the data')
         flagdata(vis=vis, mode='shadow', reason='shadow', tolerance=0.0,
              flagbackup=False, name='shadow', action='apply')
     except Exception as e:
         logging.error(f"Exception {e} while shadow flagging")
 
     if report_verbosity >= 2:
-        logging.info('Reporting data flagged after shadow flagging...')
+        logging.info('++==>> Reporting data flagged after shadow flagging...')
         summary_2 = flagdata(vis=vis, mode='summary')
         report_flag(summary_2, 'field')
         # report_flag(summary_2,'scan')
@@ -236,7 +236,7 @@ def pre_flagging(vis):
         logging.error(f"Exception {e} while clipping")
 
     if report_verbosity >= 2:
-        logging.info('Reporting data flagged after clipping')
+        logging.info('++==>> Reporting data flagged after clipping')
         summary_4 = flagdata(vis=vis, mode='summary')
         report_flag(summary_4, 'field')
         # report_flag(summary_4,'scan')
@@ -245,20 +245,20 @@ def pre_flagging(vis):
     #  get scan length -- change the quack
 
     try:
-        logging.info('Quacking the data')
+        logging.info('++==>> Quacking the data')
         flagdata(vis=vis, mode='quack', quackinterval=5.0, quackmode='beg',
                 reason='quack', flagbackup=False, action='apply', name='quack')
     except Exception as e:
         logging.error(f"Exception {e} while quacking")
 
     if report_verbosity >= 2:
-        logging.info('Reporting data flagged after quack flagging...')
+        logging.info('++==>> Reporting data flagged after quack flagging...')
         summary_5 = flagdata(vis=vis, mode='summary')
         report_flag(summary_5, 'field')
         # report_flag(summary_5,'scan')
 
     try:
-        logging.info('Creating new flagbackup file after pre-flagging.')
+        logging.info('++==>> Creating new flagbackup file after pre-flagging.')
         flagmanager(vis=vis, mode='save', versionname='pre_flagging',
                     comment='Pre-flags applied: Autocorr,clipping, quack, shadow.')
     except Exception as e:
@@ -272,6 +272,25 @@ def pre_flagging(vis):
                 reason='edge_channels', flagbackup=False, action='apply',
                 name='edge_channels')
 
+    # if do_flag_pointing_scans == True:
+    try:
+        logging.info('++==>> Flagging pointing scans')
+        flagdata(vis=vis, mode='manual', intent='*POINTING*',
+                reason='pointing', flagbackup=False, action='apply',
+                name='pointing')
+    except:
+        logging.warning('--==>> No pointing scans found. Going to skip.')
+
+    """
+    This is dangerous. Some older observations can have config scans attached to targets 
+    or calibrators. Please, check the data before enabling this.
+    try:
+        logging.info('++==>> Flagging config scans')
+        flagdata(vis=vis, mode='manual', intent='*CONFIG*', reason='config',
+                flagbackup=False, action='apply', name='config')
+    except:
+        logging.warning('--==>> No config scans found. Going to skip.')
+    """
     # Further flagging (manual inspections)
 
     # if apply_tfcrop_init == True:
@@ -317,7 +336,7 @@ def pre_flagging(vis):
     logging.info('Total data after initial flagging')
     summary_pre_cal = flagdata(vis=vis, mode='summary')
     report_flag(summary_pre_cal, 'field')
-    report_flag(summary_pre_cal, 'scan')
+    # report_flag(summary_pre_cal, 'scan')
     # report_flag(summary_pre_cal,'antenna')
 
     pre_flagging_endtime = time.time() 
