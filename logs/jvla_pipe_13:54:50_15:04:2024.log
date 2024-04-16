@@ -1,6 +1,0 @@
-INFO:root:Working directory /raid1/scratch/kelvinw/m15_data/vla/working_directory already exists
-INFO:root:Dir /raid1/scratch/kelvinw/m15_data/vla/working_directory/flags exists. Will not create one
-INFO:root:Dir /raid1/scratch/kelvinw/m15_data/vla/working_directory/calibration exists. Will not create one
-INFO:root:Dir /raid1/scratch/kelvinw/m15_data/vla/working_directory/plots exists. Will not create one
-INFO:root:Running CASA task importasdm
-INFO:root:Making /raid1/scratch/kelvinw/m15_data/vla/working_directory/11A-269.ms
