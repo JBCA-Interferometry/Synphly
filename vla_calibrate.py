@@ -1,3 +1,13 @@
+available_models = ['3C123_P.im', '3C138_K.im', '3C138_Q.im', '3C138_X.im', '3C147_K.im',
+                    '3C147_Q.im', '3C147_X.im', '3C286_C.im', '3C286_P.im', '3C286_U.im',
+                    '3C380_P.im', '3C48_K.im', '3C48_Q.im', '3C48_X.im', '3C138_A.im',
+                    '3C138_L.im', '3C138_S.im', '3C147_A.im', '3C147_L.im', '3C147_S.im',
+                    '3C196_P.im', '3C286_K.im', '3C286_Q.im', '3C286_X.im', '3C48_A.im',
+                    '3C48_L.im', '3C48_S.im', '3C138_C.im', '3C138_P.im', '3C138_U.im',
+                    '3C147_C.im', '3C147_P.im', '3C147_U.im', '3C286_A.im',
+                    '3C286_L.im', '3C286_S.im', '3C295_P.im', '3C48_C.im',
+                    '3C48_P.im', '3C48_U.im']
+
 def initial_corrections(vis):
     """
     Init first corrections to the data, e.g. opacity, gain curve, etc.
@@ -24,7 +34,7 @@ def initial_corrections(vis):
         caltable = f"{calibration_dir}/{os.path.basename(vis.replace('.ms','_antpos.tb'))}"
         # os.system(f"rm -r {caltable}")
         if not os.path.exists(caltable):
-            casatasks.gencal(vis=vis,caltable=caltable, caltype='antpos')
+            gencal(vis=vis,caltable=caltable, caltype='antpos')
         init_tables.append(caltable)
         init_tables_dict['antpos'] = caltable
     except Exception as e:
@@ -36,7 +46,7 @@ def initial_corrections(vis):
         caltable = f"{calibration_dir}/{os.path.basename(vis.replace('.ms','_gaincurve.tb'))}"
         if not os.path.exists(caltable):
             # os.system(f"rm -r {caltable}")
-            casatasks.gencal(vis=vis,caltable=caltable, caltype='gc')
+            gencal(vis=vis,caltable=caltable, caltype='gc')
         init_tables.append(caltable)
         init_tables_dict['gaincurve'] = caltable
     except Exception as e:
@@ -45,9 +55,6 @@ def initial_corrections(vis):
 
 
     # NB: Implement tec corrections -- for low frequencies
-
-    msmd = casatools.msmetadata()
-
     msmd.open(vis)
     bandwidth = msmd.bandwidths()
     nspw = len(bandwidth)
@@ -63,14 +70,14 @@ def initial_corrections(vis):
         logging.info("Generating cal tables for opacities")
         weather_plot = vis+'_weather.pdf'
         # os.system(f"rm -r {weather_plot}")
-        myTau = casatasks.plotweather(vis=vis, seasonal_weight=0.5, doPlot=True, plotName=weather_plot)
+        myTau = plotweather(vis=vis, seasonal_weight=0.5, doPlot=True, plotName=weather_plot)
         os.system(f'mv {weather_plot} {plots_dir}')
         try:
             caltable = f"{calibration_dir}/{os.path.basename(vis.replace('.ms', '_opacity.tb'))}"
             logging.info(f"Generating weather caltable {caltable}")
             if not os.path.exists(caltable):
             # fix the spw here
-                casatasks.gencal(vis=vis,caltable=caltable,caltype='opac', spw=all_spw, parameter=myTau)
+                gencal(vis=vis,caltable=caltable,caltype='opac', spw=all_spw, parameter=myTau)
             init_tables.append(caltable)
             init_tables_dict['opacity'] = caltable
         except Exception as e:
@@ -86,7 +93,7 @@ def initial_corrections(vis):
         caltable = f"{calibration_dir}/{os.path.basename(vis.replace('.ms', '_rq.tb'))}"
         # os.system(f"rm -r {caltable}")
         if not os.path.exists(caltable):
-            casatasks.gencal(vis=vis,caltable=caltable, caltype='rq')
+            gencal(vis=vis,caltable=caltable, caltype='rq')
         init_tables.append(caltable)
         init_tables_dict['rq'] = caltable
     except Exception as e:
@@ -99,7 +106,7 @@ def initial_corrections(vis):
         caltable = f"{calibration_dir}/{os.path.basename(vis.replace('.ms', '_spwpow.tb'))}"
         # os.system(f"rm -r {caltable}")
         if not os.path.exists(caltable):
-            casatasks.gencal(vis=vis,caltable=caltable, caltype='swpow')
+            gencal(vis=vis,caltable=caltable, caltype='swpow')
         init_tables.append(caltable)
         init_tables_dict['swpow'] = caltable
     except Exception as e:
@@ -118,14 +125,14 @@ def flux_scale_setjy(vis,flux_density=None,model_image=None):
 
     # try:
     #     logging.info("Clearing model column")
-    #     casatasks.delmod(vis, otf=True, scr=False)
+    #     delmod(vis, otf=True, scr=False)
     #     logging.info("Successfully deleted model column")
     # except Exception as e:
     #     logging.critical(f"Exception {e} while deleting model column")
     #
     # try:
     #     logging.info("Re-initialize the calibration")
-    #     casatasks.clearcal(vis)
+    #     clearcal(vis)
     #     logging.info("Successfully cleared the calibration")
     # except Exception as e:
     #     logging.critical(f"Exception {e} while clearing calibrations")
@@ -144,7 +151,6 @@ def flux_scale_setjy(vis,flux_density=None,model_image=None):
     # spw = 0
     # spw0_freq = msmd.chanfreqs(0)*1e-9
 
-    msmd = casatools.msmetadata()
     msmd.open(vis)
     bandwidth = msmd.bandwidths()
     nspw = len(bandwidth)
@@ -182,15 +188,6 @@ def flux_scale_setjy(vis,flux_density=None,model_image=None):
         (40, 50): "Q",
             }
 
-    available_models = ['3C123_P.im','3C138_K.im','3C138_Q.im','3C138_X.im','3C147_K.im',
-                        '3C147_Q.im','3C147_X.im','3C286_C.im','3C286_P.im','3C286_U.im',
-                        '3C380_P.im','3C48_K.im','3C48_Q.im','3C48_X.im','3C138_A.im',
-                        '3C138_L.im','3C138_S.im','3C147_A.im','3C147_L.im','3C147_S.im',
-                        '3C196_P.im','3C286_K.im','3C286_Q.im','3C286_X.im','3C48_A.im',
-                        '3C48_L.im','3C48_S.im','3C138_C.im','3C138_P.im','3C138_U.im',
-                        '3C147_C.im','3C147_P.im','3C147_U.im','3C286_A.im',
-                        '3C286_L.im','3C286_S.im','3C295_P.im','3C48_C.im',
-                        '3C48_P.im','3C48_U.im']
     # model = ''
 
     for range_,band in freq_ranges.items():
@@ -214,7 +211,7 @@ def flux_scale_setjy(vis,flux_density=None,model_image=None):
     try:
         if flux_density is None:
             logging.info(f"Performing absolute flux calibration using {model}")
-            flux_density_data = casatasks.setjy(vis=vis, field=flux_calibrator,
+            flux_density_data = setjy(vis=vis, field=flux_calibrator,
                                                 spw='', model=model, scalebychan=True,
                                                 standard='Perley-Butler 2017', listmodels=False,
                                                 usescratch=True)
@@ -254,12 +251,12 @@ def flux_scale_setjy(vis,flux_density=None,model_image=None):
             if model_image is not None:
                 logging.warning(f"Using provided model image {model_image} for flux calibrator"
                                 f" {flux_calibrator} at {band} band.")
-                flux_density_data = casatasks.setjy(vis=vis, field=flux_calibrator,
+                flux_density_data = setjy(vis=vis, field=flux_calibrator,
                                                     spw='', model=model_image, scalebychan=True,
                                                     standard='Perley-Butler 2017', listmodels=False,
                                                     usescratch=True)
             else:
-                flux_density_data = casatasks.setjy(vis=vis_to_use, field=flux_calibrator,
+                flux_density_data = setjy(vis=vis_to_use, field=flux_calibrator,
                                                     spw=all_spws, scalebychan=True,
                                                     standard='manual', fluxdensity=flux_density,
                                                     listmodels=False, usescratch=True)
@@ -288,14 +285,14 @@ def run_bandpass(vis, field, scan,
             if os.path.exists(caltable):
                 os.system(f"rm -r {caltable}")
 
-            casatasks.bandpass(vis=vis, caltable=caltable, scan=scan,
+            bandpass(vis=vis, caltable=caltable, scan=scan,
                                field=field, refant=refant, spw=spw,
                                combine=combine, bandtype=bandtype,
                                solint=solint, minsnr=minsnr, solnorm=solnorm,
                                gaintable=gaintables)
         else:
             if not os.path.exists(caltable):
-                casatasks.bandpass(vis=vis, caltable=caltable, scan=scan,
+                bandpass(vis=vis, caltable=caltable, scan=scan,
                                    field=field, refant=refant, spw=spw,
                                    combine=combine, bandtype=bandtype,
                                    solint=solint, minsnr=minsnr, solnorm=solnorm,
@@ -324,7 +321,7 @@ def run_gaincal(vis, field, scan,
         if overwrite:
             if os.path.exists(caltable):
                 os.system(f"rm -r {caltable}")
-            casatasks.gaincal(vis=vis, caltable=caltable,scan=scan,
+            gaincal(vis=vis, caltable=caltable,scan=scan,
                               field=field, refant=refant, spw=spw, combine=combine,
                               calmode=calmode, solint=solint, minsnr=minsnr, gaintype=gaintype,
                               refantmode=refantmode,
@@ -332,7 +329,7 @@ def run_gaincal(vis, field, scan,
                               gaintable=gaintables)
         else:
             if not os.path.exists(caltable):
-                casatasks.gaincal(vis=vis, caltable=caltable, scan=scan,
+                gaincal(vis=vis, caltable=caltable, scan=scan,
                                   field=field, refant=refant, spw=spw, combine=combine,
                                   calmode=calmode, solint=solint, minsnr=minsnr, gaintype=gaintype,
                                   refantmode=refantmode,
@@ -348,7 +345,6 @@ def run_gaincal(vis, field, scan,
 
 
 def get_chan_spws_map(vis):
-    msmd = casatools.msmetadata()
     msmd.open(vis)
     bandwidth = msmd.bandwidths()
     nspw = len(bandwidth)
@@ -375,57 +371,61 @@ def bandpass_cal(i=1, do_plots=False):
 
     spw_skip_edge, spw_central = get_chan_spws_map(vis=vis_for_cal)
 
-    overwrite = True
+    overwrite = False
 
-    gain_tables_dict = {}
-    table_stage = '_bpcal_d_'
-    solint = bp_solint_K
+    # COMPUTE THE DELAY FOR THE BANDPASS CALIBRATOR
+    gain_tables_BP_dict = {}
+    table_stage_bpcal_d = '_bpcal_d_'
+    """
+    Each call of run_gaincal will take previous tables (e.g. init_tables) 
+    compute the requested table (e.g. delay) and return the new list of tables -- 
+    gaintables_temp_K --  i.e. the generated table appended to init_tables.
+    """
     gaintables_temp_K = run_gaincal(vis=vis_for_cal,
                                     field=bandpass_calibrator,
                                     gaintables=init_tables,
                                     scan='', refant=ref_antenna,
                                     spw=spw_skip_edge,
                                     calmode='p', gaintype='K',
-                                    solint=solint,overwrite=overwrite,
-                                    i=i, table_stage=table_stage,
+                                    solint=bp_solint_K,overwrite=overwrite,
+                                    i=i, table_stage=table_stage_bpcal_d,
                                     minsnr=minsnr
                                     )
 
-    gain_tables_dict['bp_K'] = gaintables_temp_K[-1]
+    gain_tables_BP_dict['bp_K'] = gaintables_temp_K[-1]
 
-    calibration_table_plot(table=gain_tables_dict['bp_K'],
+    calibration_table_plot(table=gain_tables_BP_dict['bp_K'],
                            stage='calibration',
-                           table_type=str(i) + table_stage + solint,
+                           table_type=str(i) + table_stage_bpcal_d + bp_solint_K,
                            kind='', xaxis='ant1', yaxis='delay', fields='')
 
-    calibration_table_plot(table=gain_tables_dict['bp_K'],
+    calibration_table_plot(table=gain_tables_BP_dict['bp_K'],
                            stage='calibration',
-                           table_type=str(i) + table_stage + solint,
+                           table_type=str(i) + table_stage_bpcal_d + bp_solint_K,
                            kind='', xaxis='time', yaxis='delay', fields='')
 
-    table_stage = '_bpcal_p_'
-    solint = bp_solint_G_p
-    # solint = '16s'
+    # USING THE DELAY TABLE; COMPUTE THE PHASE FOR THE BANDPASS CALIBRATOR WITH A SHORT SOLINT
+    table_stage_bpcal_p = '_bpcal_p_'
     gaintables_temp_bpcal_p = run_gaincal(vis=vis_for_cal,
                                           field=bandpass_calibrator,
                                           gaintables=gaintables_temp_K,
                                           scan='', refant=ref_antenna,
                                           spw=spw_central, calmode='p', gaintype='G',
-                                          solint=solint,overwrite=overwrite,
-                                          i=i, table_stage=table_stage,
+                                          solint=bp_solint_G_p,overwrite=overwrite,
+                                          i=i, table_stage=table_stage_bpcal_p,
                                           minsnr=minsnr
                                           )
-    gain_tables_dict['bp_p'] = gaintables_temp_bpcal_p[-1]
+    gain_tables_BP_dict['bp_p'] = gaintables_temp_bpcal_p[-1]
 
-    calibration_table_plot(table=gain_tables_dict['bp_p'],
+    # calibration_table_plot(table=gain_tables_BP_dict['bp_p'],
+    #                        stage='calibration',
+    #                        table_type=str(i) + table_stage_bpcal_p + bp_solint_G_p,
+    #                        kind='', xaxis='freq', yaxis='phase', fields='')
+    calibration_table_plot(table=gain_tables_BP_dict['bp_p'],
                            stage='calibration',
-                           table_type=str(i) + table_stage + solint,
-                           kind='', xaxis='chan', yaxis='phase', fields='')
-
-    calibration_table_plot(table=gain_tables_dict['bp_p'],
-                           stage='calibration',
-                           table_type=str(i) + table_stage + solint,
+                           table_type=str(i) + table_stage_bpcal_p + bp_solint_G_p,
                            kind='', xaxis='time', yaxis='phase', fields='')
+
     # Plot the phase gains for individual antennas.
     # for k in range(len(ref_antenna_list)):
     #     calibration_table_plot(table=gain_tables_dict['bp_p'],
@@ -433,97 +433,197 @@ def bandpass_cal(i=1, do_plots=False):
     #                            table_type=str(i) + table_stage + solint,
     #                            kind='', xaxis='time', yaxis='phase', fields='')
 
-    # table_stage = '_bpcal_ap_'
-    # solint = bp_solint_G_ap
-    # gaintables_temp_bpcal_ap = run_gaincal(vis=vis_for_cal,
-    #                                        field=bandpass_calibrator,
-    #                                        gaintables=gaintables_temp_bpcal_p,
-    #                                        scan='', refant=ref_antenna,
-    #                                        spw=spw_central, calmode='ap', gaintype='G',
-    #                                        solint=solint, overwrite=overwrite,
-    #                                        i=i, table_stage=table_stage,
-    #                                        minsnr=minsnr
-    #                                        )
-    # gain_tables_dict['bp_ap'] = gaintables_temp_bpcal_ap[-1]
-    #
-    #
-    # calibration_table_plot(table=gain_tables_dict['bp_ap'],
-    #                        stage='calibration',
-    #                        table_type=str(i) + table_stage + solint,
-    #                        kind='', xaxis='time', yaxis='phase', fields='')
-    #
-    # calibration_table_plot(table=gain_tables_dict['bp_ap'],
-    #                        stage='calibration',
-    #                        table_type=str(i) + table_stage + solint,
-    #                        kind='', xaxis='time', yaxis='amp', fields='')
-    #
-    #
-    # table_stage = '_bpcal_ap_inf_'
-    # solint = 'inf'
-    # gaintables_temp_bpcal_ap_inf = run_gaincal(vis=vis_for_cal,
-    #                                        field=bandpass_calibrator,
-    #                                        gaintables=gaintables_temp_bpcal_p,
-    #                                        scan='', refant=ref_antenna,
-    #                                        spw=spw_central, calmode='ap', gaintype='G',
-    #                                        solint=solint, overwrite=False,
-    #                                        i=i, table_stage=table_stage,
-    #                                        minsnr=minsnr
-    #                                        )
-    # gain_tables_dict['bp_ap_inf'] = gaintables_temp_bpcal_ap_inf[-1]
-    #
-    #
-    # calibration_table_plot(table=gain_tables_dict['bp_ap_inf'],
-    #                        stage='calibration',
-    #                        table_type=str(i) + table_stage + solint,
-    #                        kind='', xaxis='time', yaxis='phase', fields='')
-    #
-    # calibration_table_plot(table=gain_tables_dict['bp_ap_inf'],
-    #                        stage='calibration',
-    #                        table_type=str(i) + table_stage + solint,
-    #                        kind='', xaxis='time', yaxis='amp', fields='')
+    # USING THE PREVIOUS DELAY AND SHORTER PHASES, COMPUTE THE AMPLITUDE GAINS FOR THE BANDPASS CALIBRATOR
+    # THIS RUN IS DONE WITH A SHORTER SOLINT
+    table_stage_bpcal_ap = '_bpcal_ap_'
+    gaintables_temp_bpcal_ap = run_gaincal(vis=vis_for_cal,
+                                           field=bandpass_calibrator,
+                                           gaintables=gaintables_temp_bpcal_p,
+                                           scan='', refant=ref_antenna,
+                                           spw=spw_central, calmode='ap', gaintype='G',
+                                           solint=bp_solint_G_ap, overwrite=overwrite,
+                                           i=i, table_stage=table_stage_bpcal_ap,
+                                           minsnr=minsnr
+                                           )
+    gain_tables_BP_dict['bp_ap'] = gaintables_temp_bpcal_ap[-1]
 
-    table_stage = '_bpcal_BP_'
-    solint = bp_solint_BP
+    calibration_table_plot(table=gain_tables_BP_dict['bp_ap'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_bpcal_ap + bp_solint_G_ap,
+                           kind='', xaxis='time', yaxis='phase', fields='')
+
+    calibration_table_plot(table=gain_tables_BP_dict['bp_ap'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_bpcal_ap + bp_solint_G_ap,
+                           kind='', xaxis='time', yaxis='amp', fields='')
+
+    # USING THE PREVIOUS DELAY AND SHORTER PHASES, COMPUTE THE AMPLITUDE GAINS FOR THE BANDPASS CALIBRATOR
+    # NOW, WITH AN INF SOLINT FOR THE AMPLITUDE GAINS.
+    table_stage_bpcal_ap_inf = '_bpcal_ap_inf_'
+    bp_solint_G_ap_inf = 'inf'
+    gaintables_temp_bpcal_ap_inf = run_gaincal(vis=vis_for_cal,
+                                           field=bandpass_calibrator,
+                                           gaintables=gaintables_temp_bpcal_p,
+                                           scan='', refant=ref_antenna,
+                                           spw=spw_central, calmode='ap', gaintype='G',
+                                           solint=bp_solint_G_ap_inf, overwrite=overwrite,
+                                           i=i, table_stage=table_stage_bpcal_ap_inf,
+                                           minsnr=minsnr
+                                           )
+    gain_tables_BP_dict['bp_ap_inf'] = gaintables_temp_bpcal_ap_inf[-1]
+
+
+    calibration_table_plot(table=gain_tables_BP_dict['bp_ap_inf'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_bpcal_ap_inf + bp_solint_G_ap_inf,
+                           kind='', xaxis='time', yaxis='phase', fields='')
+
+    calibration_table_plot(table=gain_tables_BP_dict['bp_ap_inf'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_bpcal_ap_inf + bp_solint_G_ap_inf,
+                           kind='', xaxis='time', yaxis='amp', fields='')
+
+    # NOW WE PROCEDD TO THE BANDPASS. WE CAN APPROACH IN TWO DIFFERENT WAYS:
+    # 1. COMPUTE BANDPASS USING DELAYS AND SHORT PHASES [K > P]
+    # 2. COMPUTE BANDPASS USING DELAYS, SHORT PHASES AND AMPLITUDES [K > P > AP]:
+    #   2.1 USING SHORT AMPLITUDES [K > P > AP_SHORT]
+    #   2.2 USING INF AMPLITUDES [K > P > AP_INF]
+    table_stage_bpcal_BP_ap_inf = '_bpcal_BP_ap_inf'
+    gaintables_temp_bpcal_BP_ap_inf = run_bandpass(vis=vis_for_cal,
+                                            field=bandpass_calibrator,
+                                            gaintables=gaintables_temp_bpcal_ap_inf,
+                                            combine='scan', bandtype='B',
+                                            scan='', refant=ref_antenna,
+                                            spw='*', overwrite=overwrite,
+                                            solint=bp_solint_BP, solnorm=False,
+                                            i=i, table_stage=table_stage_bpcal_BP_ap_inf,
+                                            minsnr=minsnr
+                                            )
+
+    gain_tables_BP_dict['bp_BP_ap_inf'] = gaintables_temp_bpcal_BP_ap_inf[-1]
+
+    calibration_table_plot(table=gain_tables_BP_dict['bp_BP_ap_inf'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_bpcal_BP_ap_inf + bp_solint_BP,
+                           kind='', xaxis='chan', yaxis='phase', fields='')
+
+    calibration_table_plot(table=gain_tables_BP_dict['bp_BP_ap_inf'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_bpcal_BP_ap_inf + bp_solint_BP,
+                           kind='', xaxis='freq', yaxis='phase', fields='')
+
+    calibration_table_plot(table=gain_tables_BP_dict['bp_BP_ap_inf'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_bpcal_BP_ap_inf + bp_solint_BP,
+                           kind='', xaxis='chan', yaxis='amp', fields='')
+
+    calibration_table_plot(table=gain_tables_BP_dict['bp_BP_ap_inf'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_bpcal_BP_ap_inf + bp_solint_BP,
+                           kind='', xaxis='freq', yaxis='amp', fields='')
+
+    table_stage_bpcal_BP_ap_short = '_bpcal_BP_ap_short'
+    gaintables_temp_bpcal_BP_ap_short = run_bandpass(vis=vis_for_cal,
+                                            field=bandpass_calibrator,
+                                            gaintables=gaintables_temp_bpcal_ap,
+                                            combine='scan', bandtype='B',
+                                            scan='', refant=ref_antenna,
+                                            spw='*', overwrite=overwrite,
+                                            solint=bp_solint_BP, solnorm=False,
+                                            i=i, table_stage=table_stage_bpcal_BP_ap_short,
+                                            minsnr=minsnr
+                                            )
+
+    gain_tables_BP_dict['bp_BP_ap_short'] = gaintables_temp_bpcal_BP_ap_short[-1]
+
+    calibration_table_plot(table=gain_tables_BP_dict['bp_BP_ap_short'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_bpcal_BP_ap_short + bp_solint_BP,
+                           kind='', xaxis='chan', yaxis='phase', fields='')
+
+    calibration_table_plot(table=gain_tables_BP_dict['bp_BP_ap_short'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_bpcal_BP_ap_short + bp_solint_BP,
+                           kind='', xaxis='freq', yaxis='phase', fields='')
+
+    calibration_table_plot(table=gain_tables_BP_dict['bp_BP_ap_short'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_bpcal_BP_ap_short + bp_solint_BP,
+                           kind='', xaxis='chan', yaxis='amp', fields='')
+
+    calibration_table_plot(table=gain_tables_BP_dict['bp_BP_ap_short'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_bpcal_BP_ap_short + bp_solint_BP,
+                           kind='', xaxis='freq', yaxis='amp', fields='')
+
+
+
+
+    table_stage_bpcal_BP = '_bpcal_BP_'
     gaintables_temp_bpcal_BP = run_bandpass(vis=vis_for_cal,
                                             field=bandpass_calibrator,
                                             gaintables=gaintables_temp_bpcal_p,
                                             combine='scan', bandtype='B',
                                             scan='', refant=ref_antenna,
-                                            spw='*', overwrite=True,
-                                            solint=solint, solnorm=False,
-                                            i=i, table_stage=table_stage,
+                                            spw='*', overwrite=overwrite,
+                                            solint=bp_solint_BP, solnorm=False,
+                                            i=i, table_stage=table_stage_bpcal_BP,
                                             minsnr=minsnr
                                             )
 
-    gain_tables_dict['bp_BP_inf'] = gaintables_temp_bpcal_BP[-1]
+    gain_tables_BP_dict['bp_BP'] = gaintables_temp_bpcal_BP[-1]
 
-    calibration_table_plot(table=gain_tables_dict['bp_BP_inf'],
+    calibration_table_plot(table=gain_tables_BP_dict['bp_BP'],
                            stage='calibration',
-                           table_type=str(i) + table_stage + solint,
+                           table_type=str(i) + table_stage_bpcal_BP + bp_solint_BP,
                            kind='', xaxis='chan', yaxis='phase', fields='')
 
-    calibration_table_plot(table=gain_tables_dict['bp_BP_inf'],
+    calibration_table_plot(table=gain_tables_BP_dict['bp_BP'],
                            stage='calibration',
-                           table_type=str(i) + table_stage + solint,
+                           table_type=str(i) + table_stage_bpcal_BP + bp_solint_BP,
                            kind='', xaxis='freq', yaxis='phase', fields='')
 
-    calibration_table_plot(table=gain_tables_dict['bp_BP_inf'],
+    calibration_table_plot(table=gain_tables_BP_dict['bp_BP'],
                            stage='calibration',
-                           table_type=str(i) + table_stage + solint,
+                           table_type=str(i) + table_stage_bpcal_BP + bp_solint_BP,
                            kind='', xaxis='chan', yaxis='amp', fields='')
 
-    calibration_table_plot(table=gain_tables_dict['bp_BP_inf'],
+    calibration_table_plot(table=gain_tables_BP_dict['bp_BP'],
                            stage='calibration',
-                           table_type=str(i) + table_stage + solint,
+                           table_type=str(i) + table_stage_bpcal_BP + bp_solint_BP,
                            kind='', xaxis='freq', yaxis='amp', fields='')
 
-    logging.info(f"Consolidating tables for bandpass cal apply.")
-    pre_cal_tables_temp = [gain_tables_dict['bp_K'],
-                           gain_tables_dict['bp_p'],
-                           # gain_tables_dict['bp_ap'],
-                           # gain_tables_dict['bp_ap_inf'],
-                           gain_tables_dict['bp_BP_inf']]
 
+    logging.info(f"Consolidating tables for bandpass cal apply.")
+    """
+    There are different ways that we can use the previous tables to apply the bandpass calibrator. 
+    - 
+    """
+
+    # tables_to_apply = ['bp_K','bp_p','bp_ap','bp_BP_ap_short']
+    # pre_cal_tables_temp = []
+    # for BPtable in tables_to_apply:
+    #     pre_cal_tables_temp.append(gain_tables_BP_dict[BPtable])
+
+    # IF ENOUGH SNR, THIS IS BETTER THAN THE OTHER TWO OPTIONS BELOW.
+    pre_cal_tables_temp = [gain_tables_BP_dict['bp_K'],
+                           gain_tables_BP_dict['bp_p'],
+                           gain_tables_BP_dict['bp_ap'],
+                           gain_tables_BP_dict['bp_BP_ap_short'],
+                           # gain_tables_BP_dict['bp_BP_ap_inf']
+                           ]
+    #
+    # pre_cal_tables_temp = [gain_tables_BP_dict['bp_K'],
+    #                        gain_tables_BP_dict['bp_p'],
+    #                        gain_tables_BP_dict['bp_ap'],
+    #                        # gain_tables_BP_dict['bp_BP_ap_short'],
+    #                        gain_tables_BP_dict['bp_BP_ap_inf']
+    #                        ]
+
+    # pre_cal_tables_temp = [gain_tables_BP_dict['bp_K'],
+    #                        gain_tables_BP_dict['bp_p'],
+    #                        gain_tables_BP_dict['bp_BP']
+    #                        ]
 
 
     logging.info(f"Consolidating gainfields for bandpass cal apply.")
@@ -540,25 +640,26 @@ def bandpass_cal(i=1, do_plots=False):
     gainfields_apply_BP_dict = {}
     gainfields_apply_BP_dict[f"BP_gainfields_run_{i}"] = gainfield_bandpass_apply
 
+    # flagmanager(vis=vis_for_cal, mode='restore', versionname='before_bandpass_init_1')
 
     logging.info(f"Creating flag-backup before applying initial bandpass.")
-    casatasks.flagmanager(vis=vis_for_cal, mode='save',
+    flagmanager(vis=vis_for_cal, mode='save',
                           versionname='before_bandpass_init_' + str(i),
                           comment='Flags before apply bandpass init, iteraction' + str(i) + '.')
 
     logging.info('     ++==>> Reporting flags before applycal to bandpass.')
-    summary_before_applycal_to_bandpass = casatasks.flagdata(vis=vis_for_cal,
+    summary_before_applycal_to_bandpass = flagdata(vis=vis_for_cal,
                                                              mode='summary',
                                                              field=bandpass_calibrator)
     report_flag(summary_before_applycal_to_bandpass, 'field')
 
-    casatasks.applycal(vis=vis_for_cal, field=bandpass_calibrator,
+    applycal(vis=vis_for_cal, field=bandpass_calibrator,
                        gaintable=gaintables_apply_BP,
                        gainfield=gainfield_bandpass_apply,
                        calwt=False, flagbackup=False)
 
     logging.info('     ++==>> Reporting flags after applycal to bandpass.')
-    summary_after_applycal_to_bandpass = casatasks.flagdata(vis=vis_for_cal, mode='summary',
+    summary_after_applycal_to_bandpass = flagdata(vis=vis_for_cal, mode='summary',
                                                             field=bandpass_calibrator)
     report_flag(summary_after_applycal_to_bandpass, 'field')
 
@@ -566,7 +667,234 @@ def bandpass_cal(i=1, do_plots=False):
                       FIELDS=bandpass_calibrator.split(','))
 
     return (gaintables_apply_BP, gainfield_bandpass_apply,
-            gain_tables_dict,gaintables_apply_BP_dict,gainfields_apply_BP_dict)
+            gain_tables_BP_dict,gaintables_apply_BP_dict,gainfields_apply_BP_dict)
+
+
+def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1):
+
+
+    spw_skip_edge, spw_central = get_chan_spws_map(vis=vis_for_cal)
+
+    overwrite = False
+
+    gain_tables_phases_dict = {}
+    table_stage_all_p_short = '_allcal_p_short_'
+    gaintables_temp_calibrators_p_short = run_gaincal(vis=vis_for_cal,
+                                    field=calibrators_all,
+                                    gaintables=gaintables_apply_BP,
+                                    scan='', refant=ref_antenna,
+                                    spw=spw_central,
+                                    calmode='p', gaintype='G',
+                                    solint=all_solint_short_p,overwrite=overwrite,
+                                    i=i, table_stage=table_stage_all_p_short,
+                                    minsnr=minsnr
+                                    )
+
+    gain_tables_phases_dict['allcals_p_short'] = gaintables_temp_calibrators_p_short[-1]
+
+    calibration_table_plot(table=gain_tables_phases_dict['allcals_p_short'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_all_p_short + all_solint_short_p,
+                           kind='', xaxis='time', yaxis='phase', fields='')
+
+    table_stage_all_p_inf = '_allcal_p_inf_'
+    gaintables_temp_calibrators_p_inf = run_gaincal(vis=vis_for_cal,
+                                    field=calibrators_all, combine='',
+                                    gaintables=gaintables_apply_BP,
+                                    scan='', refant=ref_antenna,
+                                    spw=spw_central,
+                                    calmode='p', gaintype='G',
+                                    solint=all_solint_long_p,overwrite=overwrite,
+                                    i=i, table_stage=table_stage_all_p_inf,
+                                    minsnr=minsnr
+                                    )
+
+    gain_tables_phases_dict['allcals_p_inf'] = gaintables_temp_calibrators_p_inf[-1]
+
+    calibration_table_plot(table=gain_tables_phases_dict['allcals_p_inf'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_all_p_inf + all_solint_long_p,
+                           kind='', xaxis='time', yaxis='phase', fields='')
 
 
 
+
+    table_stage_all_ap_short = '_allcal_ap_short_'
+    gaintables_temp_calibrators_amp_short = run_gaincal(vis=vis_for_cal,
+                                                  field=calibrators_all,
+                                                  gaintables=gaintables_temp_calibrators_p_short,
+                                                  scan='', refant=ref_antenna,
+                                                  spw=spw_central, calmode='ap', gaintype='G',
+                                                  solint=all_solint_short_ap,
+                                                  i=i, table_stage=table_stage_all_ap_short,
+                                                  minsnr=minsnr
+                                                  )
+    gain_tables_phases_dict['allcals_ap_short'] = gaintables_temp_calibrators_amp_short[-1]
+
+    calibration_table_plot(table=gain_tables_phases_dict['allcals_ap_short'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_all_ap_short + all_solint_short_ap,
+                           kind='', xaxis='time', yaxis='phase', fields='')
+    calibration_table_plot(table=gain_tables_phases_dict['allcals_ap_short'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_all_ap_short + all_solint_short_ap,
+                           kind='', xaxis='time', yaxis='amp', fields='')
+
+    ##CONTINUE HEREEEEEE
+
+    table_stage_allcal_ap_inf = '_allcal_ap_inf_'
+    gaintables_temp_calibrators_amp_inf = run_gaincal(vis=vis_for_cal,
+                                                  field=calibrators_all,
+                                                  gaintables=gaintables_temp_calibrators_p_short,
+                                                  scan='', refant=ref_antenna,
+                                                  spw=spw_central, calmode='ap', gaintype='G',
+                                                  solint=all_solint_inf_ap,
+                                                  i=i, table_stage=table_stage_allcal_ap_inf,
+                                                  minsnr=minsnr
+                                                  )
+    gain_tables_phases_dict['allcals_ap_inf'] = gaintables_temp_calibrators_amp_inf[-1]
+
+    calibration_table_plot(table=gain_tables_phases_dict['allcals_ap_inf'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_allcal_ap_inf + all_solint_inf_ap,
+                           kind='', xaxis='time', yaxis='phase', fields='')
+    calibration_table_plot(table=gain_tables_phases_dict['allcals_ap_inf'],
+                           stage='calibration',
+                           table_type=str(i) + table_stage_allcal_ap_inf + all_solint_inf_ap,
+                           kind='', xaxis='time', yaxis='amp', fields='')
+
+    ## Flux Scale
+
+    """
+    We now apply the flux scale on the amplitude gains with the longer solution intervals. 
+    """
+    fluxtable = gain_tables_phases_dict['allcals_ap_short'] .replace('.tb','_flux_scale.tb')
+    listfluxfile = fluxtable.replace('.tb', '_fluxinfo.txt')
+
+    flux_bp = fluxscale(vis=vis_for_cal,
+                        caltable=gain_tables_phases_dict['allcals_ap_short'],
+                        fluxtable=fluxtable, reference=flux_calibrator,
+                        transfer=calibrators_all, incremental=True,
+                        listfile=listfluxfile, fitorder=1)
+
+    if os.path.exists(fluxtable):
+        """
+        If fluxscale fails (e.g. older observations), the table fluxtable will not be created.
+        """
+        #
+        gain_tables_phases_dict['allcals_ap_fluxscale'] = fluxtable
+
+        flux_phase_cals_scaled = setjy(vis=vis_for_cal, field=calibrators_all,
+                                       scalebychan=True,standard='fluxscale', fluxdict=flux_bp)
+
+        calibration_table_plot(table=fluxtable,
+                               stage='calibration',
+                               table_type=str(i) + table_stage_all_ap_short + all_solint_short_ap + '_flux_scale',
+                               kind='', xaxis='time', yaxis='phase', fields='')
+        calibration_table_plot(table=fluxtable,
+                               stage='calibration',
+                               table_type=str(i) + table_stage_all_ap_short + all_solint_short_ap + '_flux_scale',
+                               kind='', xaxis='time', yaxis='amp', fields='')
+
+
+        msmd.open(vis)
+        bandwidth = msmd.bandwidths()
+        nspw = len(bandwidth)
+
+        chan_freqs_all = np.empty(nspw, dtype=object)
+        spws_freq = np.zeros(nspw)
+
+        for nch in range(nspw):
+            chan_freqs_all[nch] = msmd.chanfreqs(nch)
+            spws_freq[nch] = np.mean(chan_freqs_all[nch])
+
+        msmd.done()
+        plots_dir = os.path.join(working_directory).rstrip('/') + '/' + 'plots'
+
+        spws_phasecals = {}
+        fluxes_phasecals = {}
+        for kk in range(len(phase_calibrator.split(','))):
+            spws_phasecals[f"{kk}"] = []
+            fluxes_phasecals[f"{kk}"] = []
+            for spw_id in range(nspw):
+                spws_phasecals[f"{kk}"].append(spw_id)
+                fluxes_phasecals[f"{kk}"].append(flux_phase_cals_scaled[f"{kk+1}"][str(spw_id)]['fluxd'][0])
+
+        try:
+            logging.info(f"Plotting the bootstrap fluxes against frequency.")
+            plt.figure(figsize=(8, 5))
+            for kk in range(len(phase_calibrator.split(','))):
+
+                plt.plot(spws_freq * 1e-9, fluxes_phasecals[f"{kk}"], 'o', color='black',
+                         label=f"{phase_calibrator.split(',')[kk]}")
+
+            plt.xlabel('Frequency [GHz]')
+            plt.ylabel(f"'Flux Density Bootstrap for  [Jy]")
+            plt.grid()
+            plt.legend()
+            plt.title('Flux density from setjy model')
+            plt.semilogx()
+            plt.semilogy()
+            flux_plot = os.path.join(plots_dir,'phasecals_flux_density_bootstrap.pdf')
+            plt.savefig(flux_plot, dpi=600)
+            plt.clf()
+            plt.close()
+        except Exception as e:
+            logging.warning(f"Flux plot not generated due to: {e}")
+
+        gaintables_temp_calibrators_amp_fluxscale = gaintables_temp_calibrators_amp_short.copy()
+        gaintables_temp_calibrators_amp_fluxscale.append(fluxtable)
+
+        gain_tables_ampphase = [gain_tables_phases_dict['allcals_p_short'],
+                                gain_tables_phases_dict['allcals_ap_short'],
+                                gain_tables_phases_dict['allcals_ap_fluxscale']
+                                ]
+
+        # gain_tables_ampphase = [gaintables_temp_calibrators_amp[-2],
+        #                         gaintables_temp_calibrators_amp[-1], fluxtable]
+        flag_FLUX_SCALE = False
+
+    else:
+        logging.warning(f"No fluxscale table generated.")
+        gaintables_temp_calibrators_amp_fluxscale = gaintables_temp_calibrators_amp_short.copy()
+        # gaintables_temp_calibrators_amp_fluxscale.append(fluxtable)
+        gain_tables_ampphase = [gain_tables_phases_dict['allcals_p_short'],
+                                gain_tables_phases_dict['allcals_ap_short']
+                                ]
+
+        flux_phase_cals_scaled = None
+        flag_FLUX_SCALE = True
+
+    logging.info(f"Creating flag-backup before applycal to calibrators iteration {i}")
+    flagmanager(vis=vis_for_cal, mode='save', versionname='before_applycal_' + str(i),
+                comment='Flags before applycal, iteraction' + str(i) + '.')
+
+    logging.info(f"Reporting flags before applycal to calibrators iteration {i}")
+    summary_before_applycal_to_calibrators = flagdata(vis=vis_for_cal, mode='summary',
+                                                      field=calibrators_all)
+    report_flag(summary_before_applycal_to_calibrators, 'field')
+
+    for calibrator_field in calibrators_all_arr:
+        ext_cal_fields = [calibrator_field] * len(gain_tables_ampphase)
+        gainfield_ampphase = gainfield_bandpass_apply.copy()
+        gainfield_ampphase.extend(ext_cal_fields)
+
+        logging.info(f"Appplying calibration to: {calibrator_field}")
+        logging.info(f"     => Gainfields are: {gainfield_ampphase}")
+        logging.info(f"     => Gaintables are: {gaintables_temp_calibrators_amp_fluxscale}")
+        applycal(vis=vis_for_cal,
+                 field=calibrator_field,
+                 gaintable=gaintables_temp_calibrators_amp_fluxscale, flagbackup=False,
+                 gainfield=gainfield_ampphase, calwt=False)
+
+
+    logging.info(f"Reporting flags after applycal to calibrators iteration {i}")
+    summary_after_applycal_to_calibrators = flagdata(vis=vis_for_cal, mode='summary', field=calibrators_all)
+    report_flag(summary_after_applycal_to_calibrators, 'field')
+
+    make_plots_stages(vis = vis_for_cal,stage='after', kind=f"after_allcals_apply_iter_{i}",
+                      FIELDS=calibrators_all.split(','))
+
+    return (
+        gaintables_temp_calibrators_amp_fluxscale, gain_tables_phases_dict,
+        flag_FLUX_SCALE, flux_bp, flux_phase_cals_scaled)
