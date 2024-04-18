@@ -212,7 +212,7 @@ def format_fields(flux_calibrator,bandpass_calibrator,phase_calibrator,target):
     all_fields = list(np.unique((calibrators_all + ',' + target).split(',')))
     return(calibrators_all,calibrators_all_arr,all_fields_str,all_fields,target_fields_arr)
 
-def split():
+def __split():
 
     """
     Creates a split measurement set
@@ -418,3 +418,48 @@ def make_plots_stages(vis,stage='after', kind='',
     make_plots_time = time.time() - make_plots_starttime
     logging.info(f"Plotting regarding {kind} for fields {FIELDS} took {make_plots_time / 60:.2f} minutes")
     pass
+
+def split_fields(vis):
+    ms_amp = listobs(vis=vis, intent='*CALIBRATE_AMPLI*')
+    ms_ph = listobs(vis=vis, intent='*CALIBRATE_PHASE*')
+    ms_flux = listobs(vis=vis, intent='*CALIBRATE_FLUX*')
+    ms_bp = listobs(vis=vis, intent='*BANDPASS*')
+    ms_all = listobs(vis=vis)
+
+    def get_fields(ms_list, type_str):
+        list_obs = [x for x in ms_list if x.startswith(type_str)]
+        print("The list", type_str, ' is ', str(list_obs))
+        field_names = []
+        for LO in list_obs:
+            field_names.append(ms_list[LO]['name'])
+        fids = np.asarray(list_obs)
+        for i in range(len(fids)):
+            fids[i] = fids[i].replace('field_', '')
+        return (fids, field_names)
+
+    def get_list(ms_list, type_str):
+        list_obs = [x for x in ms_list if x.startswith(type_str)]
+        print("The list", type_str, ' is ', str(list_obs))
+        for LO in list_obs:
+            print(ms_list[LO]['0']['FieldName'], ms_list[LO]['0']['FieldId'])
+        return (list_obs)
+
+    fids, targets = get_fields(ms_all, 'field')
+
+    fields_split_dir = f"{working_directory}/fields"
+    if not os.path.exists(fields_split_dir):
+        os.makedirs(fields_split_dir)
+    for target in targets:
+        formated_target = target.replace(' ', '').replace('/', '')
+        os.system(f'mkdir {fields_split_dir}/{formated_target}')
+        logging.info(f"Splitting field {target} into "
+                     f"-->> {working_directory}/fields/{formated_target}"
+                     f"/{formated_target}.calibrated.ms")
+        split(vis=vis,
+              outputvis=f'{fields_split_dir}/{formated_target}'
+                        f'/{formated_target}.calibrated.avg12s.ms',
+              datacolumn='corrected', field=target, timebin='12s')
+        split(vis=vis,
+              outputvis=f'{fields_split_dir}/{formated_target}/{formated_target}.calibrated.ms',
+              datacolumn='corrected', field=target)
+
