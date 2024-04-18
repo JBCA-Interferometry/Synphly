@@ -116,7 +116,8 @@ all_solint_long_p = config.get('calibrate','all_solint_long_p')
 all_solint_inf_ap = config.get('calibrate','all_solint_inf_ap')
 
 do_apply_science = config.getboolean('calibrate','do_apply_science')
-
+do_flag_science = config.getboolean('calibrate','do_flag_science')
+do_run_statwt = config.getboolean('calibrate','do_run_statwt')
 # defining vis here
 
 vis = f"{working_directory}/{experiment}.ms"
@@ -141,12 +142,12 @@ except Exception as e:
     logging.error(f"An error occured while creating the working directory: {e}")
 
 
-if load_data == True and 'load_data' not in steps_performed:
+if load_data == True and 'load_data':   # not in steps_performed:
     try:
         logging.info("Running CASA task importasdm")
         vis_for_cal = import_data()
         # getfields()
-        steps_performed.append('load_data')
+        # steps_performed.append('load_data')
     except Exception as e:
         logging.critical(f"Exception {e} occured")
         
