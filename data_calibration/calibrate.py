@@ -378,14 +378,17 @@ def get_chan_spws_map(vis,compute_edge_for_flagging=False):
     else:
         return(spw_skip_edge,spw_central)
 
-def bandpass_cal(i=1, do_plots=False):
+def bandpass_cal(i=1, do_plots=False,overwrite = False):
     if do_plots:
         check_bandpass_plots(ref_antenna_list=ref_antenna_list,
                              field=bandpass_calibrator, spws=None)
 
     spw_skip_edge, spw_central = get_chan_spws_map(vis=vis_for_cal)
 
-    overwrite = False
+    if os.path.exists(vis + '.flagversions/flags.before_bandpass_init_' + str(i)+'/'):
+        logging.info(f"Restoring flags from {vis}.flagversions/flags.before_bandpass_init_{i}/")
+        flagmanager(vis=vis, mode='restore', versionname='before_bandpass_init_' + str(i))
+
 
     # COMPUTE THE DELAY FOR THE BANDPASS CALIBRATOR
     gain_tables_BP_dict = {}
@@ -479,6 +482,7 @@ def bandpass_cal(i=1, do_plots=False):
                                            field=bandpass_calibrator,
                                            gaintables=gaintables_temp_bpcal_p,
                                            scan='', refant=ref_antenna,
+                                           combine='scan',
                                            spw=spw_central, calmode='ap', gaintype='G',
                                            solint=bp_solint_G_ap_inf, overwrite=overwrite,
                                            i=i, table_stage=table_stage_bpcal_ap_inf,
@@ -620,12 +624,12 @@ def bandpass_cal(i=1, do_plots=False):
     #     pre_cal_tables_temp.append(gain_tables_BP_dict[BPtable])
 
     # IF ENOUGH SNR, THIS IS BETTER THAN THE OTHER TWO OPTIONS BELOW.
-    pre_cal_tables_temp = [gain_tables_BP_dict['bp_K'],
-                           gain_tables_BP_dict['bp_p'],
-                           gain_tables_BP_dict['bp_ap'],
-                           gain_tables_BP_dict['bp_BP_ap_short'],
-                           # gain_tables_BP_dict['bp_BP_ap_inf']
-                           ]
+    # pre_cal_tables_temp = [gain_tables_BP_dict['bp_K'],
+    #                        gain_tables_BP_dict['bp_p'],
+    #                        gain_tables_BP_dict['bp_ap'],
+    #                        gain_tables_BP_dict['bp_BP_ap_short'],
+    #                        # gain_tables_BP_dict['bp_BP_ap_inf']
+    #                        ]
     #
     # pre_cal_tables_temp = [gain_tables_BP_dict['bp_K'],
     #                        gain_tables_BP_dict['bp_p'],
@@ -634,10 +638,10 @@ def bandpass_cal(i=1, do_plots=False):
     #                        gain_tables_BP_dict['bp_BP_ap_inf']
     #                        ]
 
-    # pre_cal_tables_temp = [gain_tables_BP_dict['bp_K'],
-    #                        gain_tables_BP_dict['bp_p'],
-    #                        gain_tables_BP_dict['bp_BP']
-    #                        ]
+    pre_cal_tables_temp = [gain_tables_BP_dict['bp_K'],
+                           gain_tables_BP_dict['bp_p'],
+                           gain_tables_BP_dict['bp_BP']
+                           ]
 
 
     logging.info(f"Consolidating gainfields for bandpass cal apply.")
@@ -667,9 +671,11 @@ def bandpass_cal(i=1, do_plots=False):
                                                              field=bandpass_calibrator)
     report_flag(summary_before_applycal_to_bandpass, 'field')
 
+    logging.info(f"Applying bandpass solutions to bandpass calibrator {bandpass_calibrator}.")
     applycal(vis=vis_for_cal, field=bandpass_calibrator,
                        gaintable=gaintables_apply_BP,
                        gainfield=gainfield_bandpass_apply,
+                       applymode = bp_applymode,
                        calwt=False, flagbackup=False)
 
     logging.info('     ++==>> Reporting flags after applycal to bandpass.')
@@ -692,6 +698,10 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1):
     overwrite = False
 
     gain_tables_phases_dict = {}
+
+    """
+    First, lets compute the short phases for all complex calibrators.
+    """
     table_stage_all_p_short = '_allcal_p_short_'
     gaintables_temp_calibrators_p_short = run_gaincal(vis=vis_for_cal,
                                     field=calibrators_all,
@@ -711,6 +721,10 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1):
                            table_type=str(i) + table_stage_all_p_short + all_solint_short_p,
                            kind='', xaxis='time', yaxis='phase', fields='')
 
+    """
+    We should also compute longer phase solution for all calibrators. 
+    Usually, these longer phase solutions will be the ones transferred to the science sources. 
+    """
     table_stage_all_p_inf = '_allcal_p_inf_'
     gaintables_temp_calibrators_p_inf = run_gaincal(vis=vis_for_cal,
                                     field=calibrators_all, combine='',
@@ -732,7 +746,11 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1):
 
 
 
-
+    """
+    We compute now the amplitude solutions for the complex calibrators.
+    This one uses a short solution interval (but should not be smaller than 32s). 
+    Note that this uses the previous shorter phase solutions.
+    """
     table_stage_all_ap_short = '_allcal_ap_short_'
     gaintables_temp_calibrators_amp_short = run_gaincal(vis=vis_for_cal,
                                                   field=calibrators_all,
@@ -756,6 +774,11 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1):
 
     ##CONTINUE HEREEEEEE
 
+    """
+    We compute now the amplitude solutions for the complex calibrators, but using 
+    an infinite solution interval. 
+    Note that this still uses the previous shorter phase solutions.
+    """
     table_stage_allcal_ap_inf = '_allcal_ap_inf_'
     gaintables_temp_calibrators_amp_inf = run_gaincal(vis=vis_for_cal,
                                                   field=calibrators_all,
@@ -782,14 +805,26 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1):
     """
     We now apply the flux scale on the amplitude gains with the longer solution intervals. 
     """
-    fluxtable = gain_tables_phases_dict['allcals_ap_short'] .replace('.tb','_flux_scale.tb')
+    fluxtable_short = gain_tables_phases_dict['allcals_ap_short'] .replace('.tb','_flux_scale.tb')
+    listfluxfile_short = fluxtable_short.replace('.tb', '_fluxinfo.txt')
+
+    flux_bp_short = fluxscale(vis=vis_for_cal,
+                        caltable=gain_tables_phases_dict['allcals_ap_short'],
+                        fluxtable=fluxtable_short, reference=flux_calibrator,
+                        transfer=calibrators_all, incremental=True,
+                        listfile=listfluxfile_short, fitorder=1)
+
+
+    fluxtable = gain_tables_phases_dict['allcals_ap_inf'] .replace('.tb','_flux_scale.tb')
     listfluxfile = fluxtable.replace('.tb', '_fluxinfo.txt')
 
     flux_bp = fluxscale(vis=vis_for_cal,
-                        caltable=gain_tables_phases_dict['allcals_ap_short'],
+                        caltable=gain_tables_phases_dict['allcals_ap_inf'],
                         fluxtable=fluxtable, reference=flux_calibrator,
                         transfer=calibrators_all, incremental=True,
                         listfile=listfluxfile, fitorder=1)
+
+    # allcals_ap_inf
 
     if os.path.exists(fluxtable):
         """
@@ -797,21 +832,31 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1):
         """
         #
         gain_tables_phases_dict['allcals_ap_fluxscale'] = fluxtable
+        gain_tables_phases_dict['allcals_ap_fluxscale_short'] = fluxtable_short
 
         flux_phase_cals_scaled = setjy(vis=vis_for_cal, field=calibrators_all,
                                        scalebychan=True,standard='fluxscale', fluxdict=flux_bp)
 
-        calibration_table_plot(table=fluxtable,
+        calibration_table_plot(table=fluxtable_short,
                                stage='calibration',
                                table_type=str(i) + table_stage_all_ap_short + all_solint_short_ap + '_flux_scale',
                                kind='', xaxis='time', yaxis='phase', fields='')
-        calibration_table_plot(table=fluxtable,
+        calibration_table_plot(table=fluxtable_short,
                                stage='calibration',
                                table_type=str(i) + table_stage_all_ap_short + all_solint_short_ap + '_flux_scale',
                                kind='', xaxis='time', yaxis='amp', fields='')
 
+        calibration_table_plot(table=fluxtable,
+                               stage='calibration',
+                               table_type=str(i) + table_stage_allcal_ap_inf + all_solint_inf_ap + '_flux_scale',
+                               kind='', xaxis='time', yaxis='phase', fields='')
+        calibration_table_plot(table=fluxtable,
+                               stage='calibration',
+                               table_type=str(i) + table_stage_allcal_ap_inf + all_solint_inf_ap + '_flux_scale',
+                               kind='', xaxis='time', yaxis='amp', fields='')
 
-        msmd.open(vis)
+
+        msmd.open(vis_for_cal)
         bandwidth = msmd.bandwidths()
         nspw = len(bandwidth)
 
@@ -823,18 +868,18 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1):
             spws_freq[nch] = np.mean(chan_freqs_all[nch])
 
         msmd.done()
+
         plots_dir = os.path.join(working_directory).rstrip('/') + '/' + 'plots'
-
-        spws_phasecals = {}
-        fluxes_phasecals = {}
-        for kk in range(len(phase_calibrator.split(','))):
-            spws_phasecals[f"{kk}"] = []
-            fluxes_phasecals[f"{kk}"] = []
-            for spw_id in range(nspw):
-                spws_phasecals[f"{kk}"].append(spw_id)
-                fluxes_phasecals[f"{kk}"].append(flux_phase_cals_scaled[f"{kk+1}"][str(spw_id)]['fluxd'][0])
-
         try:
+            spws_phasecals = {}
+            fluxes_phasecals = {}
+            for kk in range(len(phase_calibrator.split(','))):
+                spws_phasecals[f"{kk}"] = []
+                fluxes_phasecals[f"{kk}"] = []
+                for spw_id in range(nspw):
+                    spws_phasecals[f"{kk}"].append(spw_id)
+                    fluxes_phasecals[f"{kk}"].append(flux_phase_cals_scaled[f"{kk+1}"][str(spw_id)]['fluxd'][0])
+
             logging.info(f"Plotting the bootstrap fluxes against frequency.")
             plt.figure(figsize=(8, 5))
             for kk in range(len(phase_calibrator.split(','))):
@@ -843,26 +888,33 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1):
                          label=f"{phase_calibrator.split(',')[kk]}")
 
             plt.xlabel('Frequency [GHz]')
-            plt.ylabel(f"'Flux Density Bootstrap for  [Jy]")
+            plt.ylabel(f"'Flux Density [Jy]")
             plt.grid()
             plt.legend()
-            plt.title('Flux density from setjy model')
+            plt.title('Flux Density Bootstrap For Phase Calibrators from Fluxscale')
             plt.semilogx()
             plt.semilogy()
             flux_plot = os.path.join(plots_dir,'phasecals_flux_density_bootstrap.pdf')
-            plt.savefig(flux_plot, dpi=600)
+            plt.savefig(flux_plot, dpi=600,bbox_inches='tight')
             plt.clf()
             plt.close()
         except Exception as e:
             logging.warning(f"Flux plot not generated due to: {e}")
 
-        gaintables_temp_calibrators_amp_fluxscale = gaintables_temp_calibrators_amp_short.copy()
+        # gaintables_temp_calibrators_amp_fluxscale = gaintables_temp_calibrators_amp_short.copy()
+        gaintables_temp_calibrators_amp_fluxscale = gaintables_temp_calibrators_amp_inf.copy()
         gaintables_temp_calibrators_amp_fluxscale.append(fluxtable)
 
-        gain_tables_ampphase = [gain_tables_phases_dict['allcals_p_short'],
-                                gain_tables_phases_dict['allcals_ap_short'],
-                                gain_tables_phases_dict['allcals_ap_fluxscale']
-                                ]
+        gain_tables_ampphase_for_all_cals = [gain_tables_phases_dict['allcals_p_short'],
+                                            gain_tables_phases_dict['allcals_ap_short'], #care with this one
+                                            # gain_tables_phases_dict['allcals_ap_inf'],
+                                            gain_tables_phases_dict['allcals_ap_fluxscale_short']
+                                            ]
+
+        gain_tables_ampphase_for_science = [gain_tables_phases_dict['allcals_p_inf'],
+                                             gain_tables_phases_dict['allcals_ap_inf'],
+                                             gain_tables_phases_dict['allcals_ap_fluxscale']
+                                             ]
 
         # gain_tables_ampphase = [gaintables_temp_calibrators_amp[-2],
         #                         gaintables_temp_calibrators_amp[-1], fluxtable]
@@ -872,12 +924,17 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1):
         logging.warning(f"No fluxscale table generated.")
         gaintables_temp_calibrators_amp_fluxscale = gaintables_temp_calibrators_amp_short.copy()
         # gaintables_temp_calibrators_amp_fluxscale.append(fluxtable)
-        gain_tables_ampphase = [gain_tables_phases_dict['allcals_p_short'],
-                                gain_tables_phases_dict['allcals_ap_short']
-                                ]
+        gain_tables_ampphase_for_all_cals = [gain_tables_phases_dict['allcals_p_short'],
+                                            gain_tables_phases_dict['allcals_ap_short']
+                                            ]
+
+        gain_tables_ampphase_for_science = [gain_tables_phases_dict['allcals_p_inf'],
+                                             gain_tables_phases_dict['allcals_ap_inf']
+                                             ]
 
         flux_phase_cals_scaled = None
         flag_FLUX_SCALE = True
+
 
     logging.info(f"Creating flag-backup before applycal to calibrators iteration {i}")
     flagmanager(vis=vis_for_cal, mode='save', versionname='before_applycal_' + str(i),
@@ -888,27 +945,85 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1):
                                                       field=calibrators_all)
     report_flag(summary_before_applycal_to_calibrators, 'field')
 
+    """
+    Aggregating the tables and fields for the applycal to the calibrators. These contain shorter
+    phase and amplitude solutions.
+    """
+    gain_tables_to_apply_all_cals = gaintables_apply_BP.copy()
+    gain_tables_to_apply_all_cals.extend(gain_tables_ampphase_for_all_cals)
+    """
+    Aggregating the tables for the applycal to the science sources. These contain longer or inf 
+    phase and amplitude solutions.
+    """
+    gain_tables_to_apply_science = gaintables_apply_BP.copy()
+    gain_tables_to_apply_science.extend(gain_tables_ampphase_for_science)
+
+    """
+    This needs a fix when a phase calibrator is used for multiple science sources. 
+    We need to track properly the gainfields. 
+    """
     for calibrator_field in calibrators_all_arr:
-        ext_cal_fields = [calibrator_field] * len(gain_tables_ampphase)
-        gainfield_ampphase = gainfield_bandpass_apply.copy()
-        gainfield_ampphase.extend(ext_cal_fields)
+        ext_cal_fields = [calibrator_field] * len(gain_tables_ampphase_for_all_cals)
+        gainfield_to_apply_all_cals = gainfield_bandpass_apply.copy()
+        gainfield_to_apply_all_cals.extend(ext_cal_fields)
 
         logging.info(f"Appplying calibration to: {calibrator_field}")
-        logging.info(f"     => Gainfields are: {gainfield_ampphase}")
-        logging.info(f"     => Gaintables are: {gaintables_temp_calibrators_amp_fluxscale}")
+        logging.info(f"     => Gainfields are: {gainfield_to_apply_all_cals}")
+        logging.info(f"     => Gaintables are: {gain_tables_to_apply_all_cals}")
         applycal(vis=vis_for_cal,
                  field=calibrator_field,
-                 gaintable=gaintables_temp_calibrators_amp_fluxscale, flagbackup=False,
-                 gainfield=gainfield_ampphase, calwt=False)
+                 applymode=ph_ap_applymode,
+                 gaintable=gain_tables_to_apply_all_cals, flagbackup=False,
+                 gainfield=gainfield_to_apply_all_cals, calwt=False)
 
 
     logging.info(f"Reporting flags after applycal to calibrators iteration {i}")
-    summary_after_applycal_to_calibrators = flagdata(vis=vis_for_cal, mode='summary', field=calibrators_all)
+    summary_after_applycal_to_calibrators = flagdata(vis=vis_for_cal, mode='summary',
+                                                     field=calibrators_all)
     report_flag(summary_after_applycal_to_calibrators, 'field')
 
     make_plots_stages(vis = vis_for_cal,stage='after', kind=f"after_allcals_apply_iter_{i}",
                       FIELDS=calibrators_all.split(','))
 
+    """
+    We need to return the tables 
+    """
     return (
-        gaintables_temp_calibrators_amp_fluxscale, gain_tables_phases_dict,
-        flag_FLUX_SCALE, flux_bp, flux_phase_cals_scaled)
+        gain_tables_phases_dict,
+        gain_tables_ampphase_for_science,gain_tables_to_apply_science,
+        flag_FLUX_SCALE)
+
+def apply_cal_to_science(vis,gain_tables_to_apply_science_final,
+                         gainfield_bandpass_apply_final,
+                         gain_tables_ampphase_for_science_final):
+    logging.info("Applying calibration to science source(s).")
+    logging.info("Aggregating gaintables  and gainfields.")
+    logging.info("     => Reporting data flagged before applycal.")
+    summary_cal_before = flagdata(vis=vis,
+                                  mode='summary', field='', datacolumn='data')
+    report_flag(summary_cal_before, 'field')
+
+    for n in range(len(target_fields_arr)):
+        gainfields_final = (gainfield_bandpass_apply_final +
+                            [phase_calibrator.split(',')[n]] * len(
+                    gain_tables_ampphase_for_science_final))
+
+        logging.info(f"Applying calibration to: {target_fields_arr[n]}")
+        logging.info(f"Gaintables: {gain_tables_to_apply_science_final}")
+        logging.info(f"Gainfields: {gainfields_final}")
+        applycal(vis=vis,
+                 field=target_fields_arr[n],
+                 gaintable=gain_tables_to_apply_science_final,
+                 gainfield=gainfields_final, calwt=False)
+
+    print('     => Reporting data flagged after applycal.')
+    summary_cal_after = flagdata(vis=vis,
+                                 mode='summary', field='', datacolumn='data')
+    report_flag(summary_cal_after, 'field')
+
+    make_plots_stages(vis=vis,
+                      stage='after',
+                      kind='after_calibration',
+                      FIELDS=target_fields_arr)
+
+    pass
