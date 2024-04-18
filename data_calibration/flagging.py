@@ -314,6 +314,14 @@ def pre_flagging(vis):
     except:
         logging.warning('--==>> No pointing scans found. Going to skip.')
 
+    try:
+        logging.info('++==>> Flagging UNSPECIFIED scans')
+        flagdata(vis=vis, mode='manual', intent='*UNSPECIFIED#UNSPECIFIED*',
+                reason='UNSPECIFIED', flagbackup=False, action='apply',
+                name='UNSPECIFIED')
+    except:
+        logging.warning('--==>> No UNSPECIFIED scans found. Going to skip.')
+
     """
     This is dangerous. Some older observations can have config scans attached to targets 
     or calibrators. Please, check the data before enabling this.
