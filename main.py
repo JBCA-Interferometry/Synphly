@@ -286,13 +286,13 @@ if do_apply_science == True and 'apply_science' not in steps_performed:
         logging.critical(f"Exception {e} while applying calibration to science.")
 
 
-if 'run_statwt' in steps and 'run_statwt' not in steps_peformed:
+if 'run_statwt' in steps and 'run_statwt' not in steps_performed:
     statwt(vis=vis_for_cal, preview=False,
            datacolumn='corrected',
            timebin='12s', statalg='chauvenet')
-    steps_peformed.append('run_statwt')
+    steps_performed.append('run_statwt')
 
-if 'flag_science' in steps and 'flag_science' not in steps_peformed:
+if 'flag_science' in steps and 'flag_science' not in steps_performed:
     apply_tfcrop(vis=vis_for_cal,
                  field=target,
                  datacolumn_to_flag='corrected')
@@ -309,7 +309,7 @@ if 'flag_science' in steps and 'flag_science' not in steps_peformed:
                       kind='final_science_rflag',
                       FIELDS=target_fields_arr)
 
-    steps_peformed.append('flag_science')
+    steps_performed.append('flag_science')
 
 if do_split == True and 'split' not in steps_performed:
     split_fields(vis=vis_for_cal)
