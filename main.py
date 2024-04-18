@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 try:
     import casatasks, casatools, casaplotms
     from casaplotms import plotms
-    from casatasks import gaincal, gencal, applycal, bandpass, split, importasdm
+    from casatasks import gaincal, gencal, applycal, bandpass, split, importasdm, statwt
     from casatasks import flagdata, flagmanager, plotants, plotweather, hanningsmooth
     from casatasks import clearcal, delmod, setjy, fluxscale, tclean, imhead, listobs
     import casalogger
@@ -103,6 +103,8 @@ bp_solint_G_p = config.get('calibrate','bp_solint_G_p')
 bp_solint_G_ap = config.get('calibrate','bp_solint_G_ap')
 bp_solint_BP = config.get('calibrate','bp_solint_BP')
 minsnr = config.getfloat('calibrate','minsnr')
+bp_applymode = config.get('calibrate','bp_applymode')
+ph_ap_applymode = config.get('calibrate','ph_ap_applymode')
 do_bandpass_1st_run = config.getboolean('calibrate','do_bandpass_1st_run')
 do_gain_calibration_1st_run = config.getboolean('calibrate','do_gain_calibration_1st_run')
 do_bandpass_2nd_run = config.getboolean('calibrate','do_bandpass_2nd_run')
@@ -183,11 +185,12 @@ if do_flagging == True:
     else:
         logging.info("Flagging using aoflagger not requested")
 
-if do_initial_cal == True and 'initial_corrections' not in steps_performed:
+# if do_initial_cal == True and 'initial_corrections' not in steps_performed:
+if do_initial_cal == True:
     try:
         logging.info("Correcting antenna pos, gaincurves, sys power and atmospheric corrections")
         init_tables, init_tables_dict = initial_corrections(vis=vis_for_cal)
-        steps_performed.append('initial_corrections')
+        # steps_performed.append('initial_corrections')
     except Exception as e:
         logging.critical(f"Exception {e} while performing initial corrections")
 
@@ -218,7 +221,7 @@ if do_bandpass_1st_run == True and 'bandpass_1st' not in steps_performed:
     try:
         logging.info("Running bandpass calibration")
         (gaintables_apply_BP_1, gainfield_bandpass_apply_1, gain_tables_BP_dict_1,
-         gaintables_apply_BP_dict_1,gainfields_apply_BP_dict_1) = bandpass_cal(i=1)
+         gaintables_apply_BP_dict_1,gainfields_apply_BP_dict_1) = bandpass_cal(i=1,overwrite=True)
         steps_performed.append('bandpass_1st')
     except Exception as e:
         logging.critical(f"Exception {e} while running bandpass calibration")
@@ -256,22 +259,61 @@ if do_bandpass_2nd_run == True and 'bandpass_2nd' not in steps_performed:
 if do_gain_calibration_2nd_run == True and 'gain_calibration_2nd' not in steps_performed:
     try:
         logging.info("Running gain calibration")
-        (gain_tables_phases_dict_1,
+        (gain_tables_phases_dict_2,
          gain_tables_ampphase_for_science_2,gain_tables_to_apply_science_2,
          flag_FLUX_SCALE_2) = cal_phases_amplitudes(gaintables_apply_BP_2,
                                                     gainfield_bandpass_apply_2,
                                                     i=2)
-        run_rflag(vis=vis_for_cal,i=2,field=calibrators_all)
+        # run_rflag(vis=vis_for_cal,i=2,field=calibrators_all)
 
-        make_plots_stages(vis=vis_for_cal,
-                          stage='after',
-                          kind='after_apply_calibration_and_flag_iter_2',
-                          FIELDS=calibrators_all_arr)
+        # make_plots_stages(vis=vis_for_cal,
+        #                   stage='after',
+        #                   kind='after_apply_calibration_and_flag_iter_2',
+        #                   FIELDS=calibrators_all_arr)
 
         steps_performed.append('gain_calibration_2nd')
     except Exception as e:
         logging.critical(f"Exception {e} while running gain calibration")
 
+if do_apply_science == True and 'apply_science' not in steps_performed:
+    try:
+        apply_cal_to_science(vis=vis_for_cal,
+                             gain_tables_to_apply_science_final = gain_tables_to_apply_science_2,
+                             gainfield_bandpass_apply_final = gainfield_bandpass_apply_2,
+                             gain_tables_ampphase_for_science_final = gain_tables_ampphase_for_science_2)
+        steps_performed.append('apply_science')
+    except Exception as e:
+        logging.critical(f"Exception {e} while applying calibration to science.")
+
+
+if 'run_statwt' in steps and 'run_statwt' not in steps_peformed:
+    statwt(vis=vis_for_cal, preview=False,
+           datacolumn='corrected',
+           timebin='12s', statalg='chauvenet')
+    steps_peformed.append('run_statwt')
+
+if 'flag_science' in steps and 'flag_science' not in steps_peformed:
+    apply_tfcrop(vis=vis_for_cal,
+                 field=target,
+                 datacolumn_to_flag='corrected')
+
+    make_plots_stages(vis=vis_for_cal,
+                      stage='after',
+                      kind='final_science',
+                      FIELDS=target_fields_arr)
+
+    run_rflag(vis=vis_for_cal,i='',field=target)
+
+    make_plots_stages(vis=vis_for_cal,
+                      stage='after',
+                      kind='final_science_rflag',
+                      FIELDS=target_fields_arr)
+
+    steps_peformed.append('flag_science')
+
+if do_split == True and 'split' not in steps_performed:
+    split_fields(vis=vis_for_cal)
+    steps_performed.append('split')
 
 # if do_apply_science == True and 'apply_science' not in steps_performed:
 #     try:
