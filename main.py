@@ -186,6 +186,19 @@ if do_flagging == True:
     else:
         logging.info("Flagging using aoflagger not requested")
 
+if do_average == True and 'average' not in steps_performed:
+    vis_for_cal_avg = vis_for_cal.replace('.ms',f'.avg{timebin_avg}.ms')
+    if not os.path.exists(vis_for_cal_avg):
+        logging.info(f"Averaging data to {timebin_avg} before calibration.")
+        split(vis=vis_for_cal,
+              outputvis=vis_for_cal_avg,
+              datacolumn='data', timebin=timebin_avg)
+        vis_for_cal = vis_for_cal_avg
+    else:
+        logging.info(f"Average ms {vis_for_cal_avg} already exists.")
+        vis_for_cal = vis_for_cal_avg
+
+
 # if do_initial_cal == True and 'initial_corrections' not in steps_performed:
 if do_initial_cal == True:
     try:
@@ -235,7 +248,11 @@ if do_gain_calibration_1st_run == True and 'gain_calibration_1st' not in steps_p
          flag_FLUX_SCALE_1) = cal_phases_amplitudes(gaintables_apply_BP_1,
                                                     gainfield_bandpass_apply_1,
                                                     i=1)
-        run_rflag(vis=vis_for_cal,i=1,field=calibrators_all)
+        apply_tfcrop(vis=vis_for_cal, field=calibrators_all,
+                     datacolumn_to_flag='residual',
+                     versionname='tfcrop_gains_apply_1')
+
+        # run_rflag(vis=vis_for_cal,i=1,field=calibrators_all)
 
         make_plots_stages(vis=vis_for_cal,
                           stage='after',
@@ -276,7 +293,7 @@ if do_gain_calibration_2nd_run == True and 'gain_calibration_2nd' not in steps_p
     except Exception as e:
         logging.critical(f"Exception {e} while running gain calibration")
 
-if do_apply_science == True and 'apply_science' not in steps_performed:
+if do_apply_science and 'apply_science' not in steps_performed:
     try:
         apply_cal_to_science(vis=vis_for_cal,
                              gain_tables_to_apply_science_final = gain_tables_to_apply_science_2,
@@ -287,13 +304,13 @@ if do_apply_science == True and 'apply_science' not in steps_performed:
         logging.critical(f"Exception {e} while applying calibration to science.")
 
 
-if 'run_statwt' in steps and 'run_statwt' not in steps_performed:
+if do_run_statwt and 'run_statwt' not in steps_performed:
     statwt(vis=vis_for_cal, preview=False,
            datacolumn='corrected',
            timebin='12s', statalg='chauvenet')
     steps_performed.append('run_statwt')
 
-if 'flag_science' in steps and 'flag_science' not in steps_performed:
+if do_flag_science and 'flag_science' not in steps_performed:
     apply_tfcrop(vis=vis_for_cal,
                  field=target,
                  datacolumn_to_flag='corrected')
@@ -303,16 +320,23 @@ if 'flag_science' in steps and 'flag_science' not in steps_performed:
                       kind='final_science',
                       FIELDS=target_fields_arr)
 
-    run_rflag(vis=vis_for_cal,i='',field=target)
 
-    make_plots_stages(vis=vis_for_cal,
-                      stage='after',
-                      kind='final_science_rflag',
-                      FIELDS=target_fields_arr)
+
+    # run_rflag(vis=vis_for_cal,i='',field=target)
+    #
+    # make_plots_stages(vis=vis_for_cal,
+    #                   stage='after',
+    #                   kind='final_science_rflag',
+    #                   FIELDS=target_fields_arr)
+
+    logging.critical('     => Reporting data flagged final.')
+    summary_final = flagdata(vis=vis_for_cal,
+                                 mode='summary', field=target)
+    report_flag(summary_final, 'field')
 
     steps_performed.append('flag_science')
 
-if do_split == True and 'split' not in steps_performed:
+if do_split and 'split' not in steps_performed:
     split_fields(vis=vis_for_cal)
     steps_performed.append('split')
 
