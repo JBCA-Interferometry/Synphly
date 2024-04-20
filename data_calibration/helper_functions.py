@@ -381,7 +381,7 @@ def make_plots_stages(vis,stage='after', kind='',
         # print('Plotting Chan vs Amp: Field')
         plotfile = f"{plots_dir}/{stage}/time_amp/time_amp_avg_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
         plotms(vis=vis, xaxis='time', yaxis='amp', ydatacolumn=ydatacolumn,
-                          avgchannel='9999', coloraxis='spw', field=FIELD,
+                          avgchannel='9999', coloraxis='baseline', field=FIELD,
                           xselfscale=True, yselfscale=True, correlation='RR,LL',
                           title='Time vs Amp, ' + str(FIELD), avgantenna=avgantenna,
                           gridrows=1, gridcols=1, width=2000, height=800, showgui=False,
@@ -390,7 +390,7 @@ def make_plots_stages(vis,stage='after', kind='',
                           plotfile=plotfile)
         plotfile = f"{plots_dir}/{stage}/freq_amp/freq_amp_avg_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
         plotms(vis=vis, xaxis='freq', yaxis='amp', ydatacolumn=ydatacolumn,
-                          avgtime='9999', coloraxis='spw', field=FIELD,
+                          avgtime='9999', coloraxis='baseline', field=FIELD,
                           xselfscale=True, yselfscale=True, correlation='RR,LL',
                           title='Freq vs Amp, ' + str(FIELD), avgantenna=avgantenna,
                           # width=800,height=540,dpi=600,overwrite=True,showgui=False,
@@ -400,7 +400,7 @@ def make_plots_stages(vis,stage='after', kind='',
                           plotfile=plotfile)
         plotfile = f"{plots_dir}/{stage}/time_phase/time_phase_avg_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
         plotms(vis=vis, xaxis='time', yaxis='phase', ydatacolumn=ydatacolumn, correlation='RR,LL',
-                          avgchannel='9999', coloraxis='spw', field=FIELD,
+                          avgchannel='9999', coloraxis='baseline', field=FIELD,
                           title='Time vs Phase, ' + str(FIELD), avgantenna=avgantenna,
                           gridrows=1, gridcols=1, width=2000, height=800, showgui=False,
                           overwrite=True,

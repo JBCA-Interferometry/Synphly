@@ -144,23 +144,31 @@ def run_rflag(vis,i, field):
     report_flag(summary_after_rflag, 'field')
 
 
-def apply_tfcrop(vis,field,datacolumn_to_flag = 'corrected'):
+def apply_tfcrop(vis,field,datacolumn_to_flag = 'corrected',
+                 versionname='applycal_before_tfcrop'):
     logging.info('  >> Applying tfcrop...')
     logging.info(f"  >> Using {datacolumn_to_flag} column for flagging")
     logging.info('    ** Creating flag backup before tfcrop...')
-    flagmanager(vis=vis_to_use, mode='save',
-                versionname='applycal_before_tfcrop',
-                comment='Applycal before tfcrop.')
+
+    if os.path.exists(f"{vis}.flagversions/flags.{versionname}/"):
+        logging.info(f"Restoring flags from {vis}.flagversions/flags.{versionname}/")
+        flagmanager(vis=vis, mode='restore', versionname=versionname)
+
+    else:
+        logging.info('    ** Creating flag backup before tfcrop...')
+        flagmanager(vis=vis_for_cal, mode='save',
+                    versionname=versionname,
+                    comment='Applycal before tfcrop.')
 
     summary_before_tfcrop = flagdata(vis=vis, mode='summary')
     report_flag(summary_before_tfcrop, 'field')
 
 
-    flagdata(vis=vis_to_use, mode='tfcrop', field=field, spw='',
-             datacolumn=datacolumn_to_flag, ntime='scan', combinescans=False,
-             extendflags=False, winsize=5,
+    flagdata(vis=vis_for_cal, mode='tfcrop', field=field, spw='',
+             datacolumn=datacolumn_to_flag, ntime='', combinescans=False,
+             extendflags=False, winsize=3,maxnpieces=7,
              flagnearfreq=False,
-             flagneartime=False, growaround=True, timecutoff=3.0, freqcutoff=3.0,
+             flagneartime=False, growaround=True, timecutoff=3.5, freqcutoff=3.5,
              action='apply', flagbackup=False, savepars=False,
              )
     logging.info('  >> Extending flags from tfcrop...')
@@ -174,7 +182,7 @@ def apply_tfcrop(vis,field,datacolumn_to_flag = 'corrected'):
     report_flag(summary_after_tfcrop, 'field')
 
     # print('    ** Saving flags backup after tfcrop...')
-    # flagmanager(vis=vis_to_use, mode='save', versionname='pre_calibration_after_tfcrop_iteraction_' + str(i),
+    # flagmanager(vis=vis_for_cal, mode='save', versionname='pre_calibration_after_tfcrop_iteraction_' + str(i),
     #             comment='Flagbackup after tfcrop/pre-calibration iteration ' + str(i))
     pass
 def manual_flagging():
