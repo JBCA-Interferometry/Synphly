@@ -90,7 +90,7 @@ def tfcrop_raw(vis,field):
                        datacolumn='data', ntime='scan', combinescans=False,
                        extendflags=False, flagnearfreq=False, flagneartime=False,
                        growaround=False,
-                       timecutoff=3.0, freqcutoff=3.0, maxnpieces=5, winsize=7,
+                       timecutoff=3.0, freqcutoff=3.0, maxnpieces=5, winsize=5,
                        action='apply', flagbackup=False, savepars=True
                        )
 
@@ -174,18 +174,18 @@ def apply_tfcrop(vis,field,datacolumn_to_flag = 'corrected',
 
 
     flagdata(vis=vis_for_cal, mode='tfcrop', field=field, spw='',
-             datacolumn=datacolumn_to_flag, ntime='', combinescans=False,
-             extendflags=False, winsize=3,maxnpieces=7,
+             datacolumn=datacolumn_to_flag, ntime='scan', combinescans=False,
+             extendflags=False, winsize=5,maxnpieces=5,
              flagnearfreq=False,
-             flagneartime=False, growaround=True, timecutoff=3.5, freqcutoff=3.5,
+             flagneartime=False, growaround=True, timecutoff=2.5, freqcutoff=2.5,
              action='apply', flagbackup=False, savepars=False,
              )
     logging.info('  >> Extending flags from tfcrop...')
     flagdata(vis=vis, field=field, spw='',
              datacolumn=datacolumn_to_flag,
              mode='extend', action='apply', display='report',
-             flagbackup=False, growtime=75.0, growaround=True,
-             growfreq=75.0, extendpols=False)
+             flagbackup=False, growtime=80.0, growaround=True,
+             growfreq=80.0, extendpols=False)
 
     summary_after_tfcrop = flagdata(vis=vis, mode='summary')
     report_flag(summary_after_tfcrop, 'field')
@@ -296,7 +296,9 @@ def pre_flagging(vis):
 
     try:
         logging.info('++==>> Quacking the data')
-        flagdata(vis=vis, mode='quack', quackinterval=5.0, quackmode='beg',
+        flagdata(vis=vis, mode='quack', quackinterval=12.0, quackmode='beg',
+                reason='quack', flagbackup=False, action='apply', name='quack')
+        flagdata(vis=vis, mode='quack', quackinterval=12.0, quackmode='endb',
                 reason='quack', flagbackup=False, action='apply', name='quack')
     except Exception as e:
         logging.error(f"Exception {e} while quacking")
