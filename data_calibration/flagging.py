@@ -116,18 +116,27 @@ def report_flag(summary, axis):
         logging.info(f"Exception {e} while reporting flags")
     
 
-def run_rflag(vis,i, field):
+def run_rflag(vis, field,datacolumn_to_flag = 'corrected',
+              versionname='applycal_before_rflag'):
     logging.info("Running rflag")
+
+    if os.path.exists(f"{vis}.flagversions/flags.{versionname}/"):
+        logging.info(f"Restoring flags from {vis}.flagversions/flags.{versionname}/")
+        flagmanager(vis=vis, mode='restore', versionname=versionname)
+
+    else:
+        logging.info('    ** Creating flag backup before rflag...')
+        flagmanager(vis=vis, mode='save',
+                    versionname=versionname,
+                    comment='Applycal before rflag.')
+
     summary_before_rflag = flagdata(vis=vis, mode='summary')
     report_flag(summary_before_rflag, 'field')
-
-    datacolumn_to_flag = 'corrected'
-    
     try:
         logging.info(f"Flagging column {datacolumn_to_flag}")
         flagdata(vis=vis, mode='rflag', field=field, spw='', display='report',
-                datacolumn=datacolumn_to_flag, ntime='scan', combinescans=False,
-                extendflags=False, winsize=5, timedevscale=3.0, freqdevscale=3.0,
+                datacolumn=datacolumn_to_flag, ntime='', combinescans=False,
+                extendflags=False, winsize=3,maxnpieces=7, timedevscale=3.0, freqdevscale=3.0,
                 flagnearfreq=False, flagneartime=False, growaround=True,
                 action='apply', flagbackup=False, savepars=True
                 )
@@ -156,7 +165,7 @@ def apply_tfcrop(vis,field,datacolumn_to_flag = 'corrected',
 
     else:
         logging.info('    ** Creating flag backup before tfcrop...')
-        flagmanager(vis=vis_for_cal, mode='save',
+        flagmanager(vis=vis, mode='save',
                     versionname=versionname,
                     comment='Applycal before tfcrop.')
 

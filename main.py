@@ -82,6 +82,7 @@ aoflagger_strategy = config.get('flagging','aoflagger_strategy')
 edge_channel_frac = config.getfloat('flagging','edge_channel_frac')
 edge_channel_flag_frac = config.getfloat('flagging','edge_channel_flag_frac')
 do_flag_edge_channels = config.getboolean('flagging','do_flag_edge_channels')
+casa_flag_mode_strategy = config.get('flagging','casa_flag_mode_strategy')
 
 # average
 do_average = config.getboolean('average','do_average')
@@ -248,9 +249,15 @@ if do_gain_calibration_1st_run == True and 'gain_calibration_1st' not in steps_p
          flag_FLUX_SCALE_1) = cal_phases_amplitudes(gaintables_apply_BP_1,
                                                     gainfield_bandpass_apply_1,
                                                     i=1)
-        apply_tfcrop(vis=vis_for_cal, field=calibrators_all,
-                     datacolumn_to_flag='residual',
-                     versionname='tfcrop_gains_apply_1')
+
+        if casa_flag_mode_strategy == 'tfcrop':
+            apply_tfcrop(vis=vis_for_cal, field=calibrators_all,
+                         datacolumn_to_flag='residual',
+                         versionname='tfcrop_gains_apply_1')
+        if casa_flag_mode_strategy == 'rflag':
+            apply_tfcrop(vis=vis_for_cal, field=calibrators_all,
+                         datacolumn_to_flag='residual',
+                         versionname='rflag_gains_apply_1')
 
         # run_rflag(vis=vis_for_cal,i=1,field=calibrators_all)
 

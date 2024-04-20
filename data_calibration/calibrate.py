@@ -138,9 +138,12 @@ def flux_scale_setjy(vis,flux_density=None,model_image=None):
         logging.critical(f"Exception {e} while clearing calibrations")
 
     logging.info(f'Setting the flux scaling using {flux_calibrator}')
-    if os.path.exists(vis + '.flagversions/flags.flags_after_tfcrop_init/'):
-        logging.info(f"Restoring flags from {vis}.flagversions/flags.flags_after_tfcrop_init/")
-        flagmanager(vis=vis, mode='restore', versionname='flags_after_tfcrop_init')
+    if os.path.exists(vis + '.flagversions/flags.before_setjy/'):
+        # logging.info(f"Restoring flags from {vis}.flagversions/flags.before_setjy/")
+        flagmanager(vis=vis, mode='restore', versionname='before_setjy')
+    else:
+        # logging.info(f"Saving flags from {vis}.flagversions/flags.before_setjy/")
+        flagmanager(vis=vis, mode='save', versionname='before_setjy')
 
     # Get the frequency of the first spectral window
     # fix model here -- needs a way to check which models are available
@@ -683,10 +686,14 @@ def bandpass_cal(i=1, do_plots=False,overwrite = False):
                                                             field=bandpass_calibrator)
     report_flag(summary_after_applycal_to_bandpass, 'field')
 
-
-    apply_tfcrop(vis = vis_for_cal, field=bandpass_calibrator,
-                 datacolumn_to_flag='residual',
-                 versionname='tfcrop_bandpass_apply_' + str(i))
+    if casa_flag_mode_strategy == 'tfcrop':
+        apply_tfcrop(vis = vis_for_cal, field=bandpass_calibrator,
+                     datacolumn_to_flag='residual',
+                     versionname='tfcrop_bandpass_apply_' + str(i))
+    if casa_flag_mode_strategy == 'rflag':
+        run_rflag(vis = vis_for_cal, field=bandpass_calibrator,
+                     datacolumn_to_flag='residual',
+                     versionname='rflag_bandpass_apply_' + str(i))
 
     make_plots_stages(vis = vis_for_cal,stage='after', kind=f"after_bandpass_apply_iter_{i}",
                       FIELDS=bandpass_calibrator.split(','))
@@ -915,7 +922,7 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1):
         gain_tables_ampphase_for_all_cals = [gain_tables_phases_dict['allcals_p_short'],
                                             # gain_tables_phases_dict['allcals_ap_short'], #care with this one
                                             gain_tables_phases_dict['allcals_ap_inf'],
-                                            gain_tables_phases_dict['allcals_ap_fluxscale_short']
+                                            gain_tables_phases_dict['allcals_ap_fluxscale']
                                             ]
 
         gain_tables_ampphase_for_science = [gain_tables_phases_dict['allcals_p_inf'],

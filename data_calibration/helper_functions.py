@@ -131,6 +131,7 @@ def getms_info(vis):
         logging.info(f"Flux calibrator(s) -> {','.join(flux_field_name)}")
     else:
         sources.extend(flux_calibrator.split(','))
+        _flux_calibrator = flux_calibrator
 
     if bandpass_calibrator == '':
         logging.info("Bandpass calibrator not provided. Will get from the ms.")
@@ -141,6 +142,7 @@ def getms_info(vis):
         logging.info(f"Bandpass calibrator(s) -> {','.join(bandpass_field_name)}")
     else:
         sources.extend(bandpass_calibrator.split(','))
+        _bandpass_calibrator = bandpass_calibrator
 
     if phase_calibrator == '':
         logging.info("Phase calibrator not provided. Will get from the ms.")
@@ -151,6 +153,7 @@ def getms_info(vis):
         logging.info(f"Phase calibrator(s) -> {','.join(phase_field_name)}")
     else:
         sources.extend(phase_calibrator.split(','))
+        _phase_calibrator = phase_calibrator
 
     if target == '':
         logging.info("Target not provided. Will get from the ms.")
@@ -161,6 +164,7 @@ def getms_info(vis):
         logging.info(f"Target(s) -> {','.join(target_field_name)}")
     else:
         sources.extend(target.split(','))
+        _target = target
 
     # sources = [flux_calibrator,bandpass_calibrator,phase_calibrator,target]
     try:
