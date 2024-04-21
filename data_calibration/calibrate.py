@@ -35,8 +35,9 @@ def initial_corrections(vis):
         # os.system(f"rm -r {caltable}")
         if not os.path.exists(caltable):
             gencal(vis=vis,caltable=caltable, caltype='antpos')
-        init_tables.append(caltable)
-        init_tables_dict['antpos'] = caltable
+        if os.path.exists(caltable):
+            init_tables.append(caltable)
+            init_tables_dict['antpos'] = caltable
     except Exception as e:
         logging.critical(f"Exception {e} while generating {caltable}")
 
