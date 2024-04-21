@@ -240,6 +240,17 @@ def find_refant(msfile, field, tablename):
     """
     This function comes from the e-MERLIN CASA Pipeline.
     https://github.com/e-merlin/eMERLIN_CASA_pipeline/blob/master/functions/eMCP_functions.py#L1501
+
+    It finds the best reference antenna for calibration.
+
+    Parameters
+    ----------
+    msfile : str
+        The measurement set file
+    field : str
+        The field to calibrate
+    tablename : str
+        The name of the calibration table
     """
     # Find phase solutions per scan:
     if not os.path.exists(tablename):
@@ -385,7 +396,7 @@ def make_plots_stages(vis,stage='after', kind='',
         # print('Plotting Chan vs Amp: Field')
         plotfile = f"{plots_dir}/{stage}/time_amp/time_amp_avg_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
         plotms(vis=vis, xaxis='time', yaxis='amp', ydatacolumn=ydatacolumn,
-                          avgchannel='9999', coloraxis='baseline', field=FIELD,
+                          avgchannel='9999', coloraxis='spw', field=FIELD,
                           xselfscale=True, yselfscale=True, correlation='RR,LL',
                           title='Time vs Amp, ' + str(FIELD), avgantenna=avgantenna,
                           gridrows=1, gridcols=1, width=2000, height=800, showgui=False,
@@ -404,7 +415,7 @@ def make_plots_stages(vis,stage='after', kind='',
                           plotfile=plotfile)
         plotfile = f"{plots_dir}/{stage}/time_phase/time_phase_avg_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
         plotms(vis=vis, xaxis='time', yaxis='phase', ydatacolumn=ydatacolumn, correlation='RR,LL',
-                          avgchannel='9999', coloraxis='baseline', field=FIELD,
+                          avgchannel='9999', coloraxis='spw', field=FIELD,
                           title='Time vs Phase, ' + str(FIELD), avgantenna=avgantenna,
                           gridrows=1, gridcols=1, width=2000, height=800, showgui=False,
                           overwrite=True,
@@ -424,6 +435,16 @@ def make_plots_stages(vis,stage='after', kind='',
     pass
 
 def split_fields(vis):
+    """
+    Splits the ms into fields
+
+
+    Parameter
+    ----------
+    vis : str
+        The measurement set to split
+
+    """
     ms_amp = listobs(vis=vis, intent='*CALIBRATE_AMPLI*')
     ms_ph = listobs(vis=vis, intent='*CALIBRATE_PHASE*')
     ms_flux = listobs(vis=vis, intent='*CALIBRATE_FLUX*')
@@ -455,15 +476,21 @@ def split_fields(vis):
         os.makedirs(fields_split_dir)
     for target in targets:
         formated_target = target.replace(' ', '').replace('/', '')
+
         os.system(f'mkdir {fields_split_dir}/{formated_target}')
         logging.info(f"Splitting field {target} into "
                      f"-->> {working_directory}/fields/{formated_target}"
                      f"/{formated_target}.calibrated.ms")
-        split(vis=vis,
-              outputvis=f'{fields_split_dir}/{formated_target}'
-                        f'/{formated_target}.calibrated.avg12s.ms',
-              datacolumn='corrected', field=target, timebin='12s')
-        split(vis=vis,
-              outputvis=f'{fields_split_dir}/{formated_target}/{formated_target}.calibrated.ms',
-              datacolumn='corrected', field=target)
-
+        # split(vis=vis,
+        #       outputvis=f'{fields_split_dir}/{formated_target}'
+        #                 f'/{formated_target}.calibrated.avg12s.ms',
+        #       datacolumn='corrected', field=target, timebin='12s')
+        try:
+            if os.path.exists(f'{fields_split_dir}/{formated_target}/{formated_target}.calibrated.ms'):
+                logging.info(f"{formated_target}.calibrated.ms exists. Will not create a new one")
+            else:
+                split(vis=vis,
+                      outputvis=f'{fields_split_dir}/{formated_target}/{formated_target}.calibrated.ms',
+                      datacolumn='corrected', field=target)
+        except Exception as e:
+            pass
