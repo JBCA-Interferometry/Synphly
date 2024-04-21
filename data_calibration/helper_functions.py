@@ -56,22 +56,6 @@ def import_data():
     # ms = casatools.ms()
     """ Writes the verbose output of the task listobs """
 
-    listfile = vis.replace(".ms","_listobs.txt")
-
-    if os.path.exists(listfile):
-        logging.info(f"Listobs file {listfile} exists")
-    else:
-        try:
-            logging.info(f"Making {listfile}")
-            ms.open(vis)  
-            ms.summary(verbose=True, listfile=listfile)
-            if os.path.isfile(listfile):
-                logging.info("A file containing listobs output is saved.")
-            else:
-                logging.info("The listobs output was not saved in a .list file. Please check the CASA log.")
-        except Exception as e:
-            logging.critical(f"Error {e} occured when making listobs")
-
     # do_hanning = True
     if do_hanning:
         vis_hs = vis.replace('.ms', '_hs.ms')
@@ -89,6 +73,23 @@ def import_data():
             vis_for_cal = vis_hs
     else:
         vis_for_cal = vis
+
+    listfile = vis_for_cal.replace(".ms","_listobs.txt")
+
+    if os.path.exists(listfile):
+        logging.info(f"Listobs file {listfile} exists")
+    else:
+        try:
+            logging.info(f"Making {listfile}")
+            ms.open(vis_for_cal)
+            ms.summary(verbose=True, listfile=listfile)
+            if os.path.isfile(listfile):
+                logging.info("A file containing listobs output is saved.")
+            else:
+                logging.info("The listobs output was not saved in a .list file. Please check the CASA log.")
+        except Exception as e:
+            logging.critical(f"Error {e} occured when making listobs")
+
     importasdm_endtime = time.time()
     logging.info(f"Exec time for data handle/conversion took "
                  f"{(importasdm_endtime-importasdm_starttime) / 60:.2f} minutes")
@@ -494,3 +495,6 @@ def split_fields(vis):
                       datacolumn='corrected', field=target)
         except Exception as e:
             pass
+
+def flux_3C286(freq,a0=1.2515,a1=-0.4605,a2=-0.1715,a3=0.0336):
+    return(a0 + a1*np.log10(freq) + a2*((np.log10(freq))**2.0) + a3*((np.log10(freq))*3.0))

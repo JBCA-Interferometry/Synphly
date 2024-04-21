@@ -117,6 +117,7 @@ def report_flag(summary, axis):
     
 
 def run_rflag(vis, field,datacolumn_to_flag = 'corrected',
+              timedevscale = 3.0, freqdevscale = 3.0,
               versionname='applycal_before_rflag'):
     logging.info("Running rflag")
 
@@ -136,7 +137,8 @@ def run_rflag(vis, field,datacolumn_to_flag = 'corrected',
         logging.info(f"Flagging column {datacolumn_to_flag}")
         flagdata(vis=vis, mode='rflag', field=field, spw='', display='report',
                 datacolumn=datacolumn_to_flag, ntime='', combinescans=False,
-                extendflags=False, winsize=3,maxnpieces=7, timedevscale=3.0, freqdevscale=3.0,
+                extendflags=False, winsize=3,maxnpieces=7,
+                 timedevscale=timedevscale, freqdevscale=freqdevscale,
                 flagnearfreq=False, flagneartime=False, growaround=True,
                 action='apply', flagbackup=False, savepars=True
                 )
@@ -296,9 +298,9 @@ def pre_flagging(vis):
 
     try:
         logging.info('++==>> Quacking the data')
-        flagdata(vis=vis, mode='quack', quackinterval=12.0, quackmode='beg',
+        flagdata(vis=vis, mode='quack', quackinterval=1.0, quackmode='beg',
                 reason='quack', flagbackup=False, action='apply', name='quack')
-        flagdata(vis=vis, mode='quack', quackinterval=12.0, quackmode='endb',
+        flagdata(vis=vis, mode='quack', quackinterval=1.0, quackmode='endb',
                 reason='quack', flagbackup=False, action='apply', name='quack')
     except Exception as e:
         logging.error(f"Exception {e} while quacking")
