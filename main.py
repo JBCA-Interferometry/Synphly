@@ -211,8 +211,12 @@ if do_initial_cal == True:
 
 if do_setjy == True and 'flux_scale_setjy' not in steps_performed:
     flux_density_data, spws, fluxes = flux_scale_setjy(vis=vis_for_cal,
-                                                       flux_density=None,
-                                                       model_image=None)
+                                                       flux_density='',
+                                                       model_image='')
+    # flux_density_data, spws, fluxes = flux_scale_setjy(vis=vis_for_cal,
+    #                                                    flux_density=[2.04,0.0,0.0,0.0],
+    #                                                    spix = -0.88,
+    #                                                    model_image=None)
     steps_performed.append('flux_scale_setjy')
 
 if do_refant and 'select_refant' not in steps_performed:
