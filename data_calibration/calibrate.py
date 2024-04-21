@@ -688,11 +688,11 @@ def bandpass_cal(i=1, do_plots=False,overwrite = False):
 
     if casa_flag_mode_strategy == 'tfcrop':
         apply_tfcrop(vis = vis_for_cal, field=bandpass_calibrator,
-                     datacolumn_to_flag='residual',
+                     datacolumn_to_flag='corrected',
                      versionname='tfcrop_bandpass_apply_' + str(i))
     if casa_flag_mode_strategy == 'rflag':
         run_rflag(vis = vis_for_cal, field=bandpass_calibrator,
-                     datacolumn_to_flag='residual',
+                     datacolumn_to_flag='corrected',
                      versionname='rflag_bandpass_apply_' + str(i))
 
     make_plots_stages(vis = vis_for_cal,stage='after', kind=f"after_bandpass_apply_iter_{i}",
@@ -920,8 +920,8 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1):
         gaintables_temp_calibrators_amp_fluxscale.append(fluxtable)
 
         gain_tables_ampphase_for_all_cals = [gain_tables_phases_dict['allcals_p_short'],
-                                            # gain_tables_phases_dict['allcals_ap_short'], #care with this one
-                                            gain_tables_phases_dict['allcals_ap_inf'],
+                                            gain_tables_phases_dict['allcals_ap_short'], #care with this one
+                                            # gain_tables_phases_dict['allcals_ap_inf'],
                                             gain_tables_phases_dict['allcals_ap_fluxscale']
                                             ]
 
