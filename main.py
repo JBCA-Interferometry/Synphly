@@ -240,7 +240,7 @@ if do_bandpass_1st_run == True and 'bandpass_1st' not in steps_performed:
     try:
         logging.info("Running bandpass calibration")
         (gaintables_apply_BP_1, gainfield_bandpass_apply_1, gain_tables_BP_dict_1,
-         gaintables_apply_BP_dict_1,gainfields_apply_BP_dict_1) = bandpass_cal(i=1,overwrite=True)
+         gaintables_apply_BP_dict_1,gainfields_apply_BP_dict_1) = bandpass_cal(i=1,overwrite=False)
         steps_performed.append('bandpass_1st')
     except Exception as e:
         logging.critical(f"Exception {e} while running bandpass calibration")
@@ -333,12 +333,13 @@ if do_flag_science and 'flag_science' not in steps_performed:
 
 
 
-    # run_rflag(vis=vis_for_cal,i='',field=target)
-    #
-    # make_plots_stages(vis=vis_for_cal,
-    #                   stage='after',
-    #                   kind='final_science_rflag',
-    #                   FIELDS=target_fields_arr)
+    # run_rflag(vis=vis_for_cal,field=all_fields_str,timedevscale=2.5,freqdevscale=2.5,
+    #           datacolumn_to_flag='corrected',versionname='final_science_rflag')
+
+    make_plots_stages(vis=vis_for_cal,
+                      stage='after',
+                      kind='final_science_rflag',
+                      FIELDS=all_fields_str.split(','))
 
     logging.critical('     => Reporting data flagged final.')
     summary_final = flagdata(vis=vis_for_cal,
