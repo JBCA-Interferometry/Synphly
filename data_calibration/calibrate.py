@@ -117,7 +117,7 @@ def initial_corrections(vis):
     logging.info(f"Initial calibrations took {initial_corrections_time/ 60:.2f} minutes")
     return(init_tables, init_tables_dict)
     
-def flux_scale_setjy(vis,flux_density=None,model_image=None):
+def flux_scale_setjy(vis,flux_density=None,model_image=None,spix=None):
 
     """
     Sets the flux scale
@@ -206,7 +206,7 @@ def flux_scale_setjy(vis,flux_density=None,model_image=None):
         logging.warning(f"Will use set flux density to [1,0,0,0] for absolute flux "
                         f"calibration, which may be wrong. Please, provide the flux density "
                         f"using the arguments fluxdensity=[I,Q,U,V] and standard='manual' in setjy.")
-        flux_density = [1.0,0.0,0.0, 0.0]
+        flux_density = [1.0,0.0,0.0,0.0]
     flux_density_data = None
     spws = None
     fluxes = None
@@ -214,7 +214,7 @@ def flux_scale_setjy(vis,flux_density=None,model_image=None):
 
 
     try:
-        if flux_density is None:
+        if flux_density == '':
             logging.info(f"Performing absolute flux calibration using {model}")
             flux_density_data = setjy(vis=vis, field=flux_calibrator,
                                                 spw='', model=model, scalebychan=True,
@@ -253,7 +253,7 @@ def flux_scale_setjy(vis,flux_density=None,model_image=None):
                 - Similarly, when it is required to input a model image for the particular flux
                 calibrator.
             """
-            if model_image is not None:
+            if model_image != '':
                 logging.warning(f"Using provided model image {model_image} for flux calibrator"
                                 f" {flux_calibrator} at {band} band.")
                 flux_density_data = setjy(vis=vis, field=flux_calibrator,
@@ -262,8 +262,9 @@ def flux_scale_setjy(vis,flux_density=None,model_image=None):
                                                     usescratch=True)
             else:
                 flux_density_data = setjy(vis=vis_for_cal, field=flux_calibrator,
-                                                    spw=all_spws, scalebychan=True,
+                                                    spw='', scalebychan=True,
                                                     standard='manual', fluxdensity=flux_density,
+                                                    reffreq=f'{mean_freq}GHz',spix=spix,
                                                     listmodels=False, usescratch=True)
     except Exception as e:
         logging.critical(f"Exception {e} while running setjy")
@@ -704,12 +705,10 @@ def bandpass_cal(i=1, do_plots=False,overwrite = False):
             gain_tables_BP_dict,gaintables_apply_BP_dict,gainfields_apply_BP_dict)
 
 
-def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1):
+def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1,overwrite = False):
 
 
     spw_skip_edge, spw_central = get_chan_spws_map(vis=vis_for_cal)
-
-    overwrite = False
 
     gain_tables_phases_dict = {}
 
@@ -1039,6 +1038,7 @@ def apply_cal_to_science(vis,gain_tables_to_apply_science_final,
         applycal(vis=vis,
                  field=target_fields_arr[n],
                  gaintable=gain_tables_to_apply_science_final,
+                 flagbackup=False,
                  gainfield=gainfields_final, calwt=False)
 
     print('     => Reporting data flagged after applycal.')
