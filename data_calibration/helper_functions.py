@@ -435,7 +435,7 @@ def make_plots_stages(vis,stage='after', kind='',
     logging.info(f"Plotting regarding {kind} for fields {FIELDS} took {make_plots_time / 60:.2f} minutes")
     pass
 
-def split_fields(vis):
+def split_fields(vis_to_split):
     """
     Splits the ms into fields
 
@@ -446,11 +446,11 @@ def split_fields(vis):
         The measurement set to split
 
     """
-    ms_amp = listobs(vis=vis, intent='*CALIBRATE_AMPLI*')
-    ms_ph = listobs(vis=vis, intent='*CALIBRATE_PHASE*')
-    ms_flux = listobs(vis=vis, intent='*CALIBRATE_FLUX*')
-    ms_bp = listobs(vis=vis, intent='*BANDPASS*')
-    ms_all = listobs(vis=vis)
+    # ms_amp = listobs(vis=vis_to_split, intent='*CALIBRATE_AMPLI*')
+    # ms_ph = listobs(vis=vis_to_split, intent='*CALIBRATE_PHASE*')
+    # ms_flux = listobs(vis=vis_to_split, intent='*CALIBRATE_FLUX*')
+    # ms_bp = listobs(vis=vis_to_split, intent='*BANDPASS*')
+    ms_all = listobs(vis=vis_to_split)
 
     def get_fields(ms_list, type_str):
         list_obs = [x for x in ms_list if x.startswith(type_str)]
@@ -470,30 +470,48 @@ def split_fields(vis):
             print(ms_list[LO]['0']['FieldName'], ms_list[LO]['0']['FieldId'])
         return (list_obs)
 
-    fids, targets = get_fields(ms_all, 'field')
+    all_ms_fields_ids, all_ms_fields_names = get_fields(ms_all, 'field')
 
     fields_split_dir = f"{working_directory}/fields"
     if not os.path.exists(fields_split_dir):
+        print(f"Creating directory fields/.")
+        # os.system(f"mkdir {fields_split_dir}")
         os.makedirs(fields_split_dir)
-    for target in targets:
-        formated_target = target.replace(' ', '').replace('/', '')
+    for field_to_split in all_ms_fields_names:
+        formated_field = field_to_split.replace(' ', '').replace('/', '')
 
-        os.system(f'mkdir {fields_split_dir}/{formated_target}')
-        logging.info(f"Splitting field {target} into "
-                     f"-->> {working_directory}/fields/{formated_target}"
-                     f"/{formated_target}.calibrated.ms")
-        # split(vis=vis,
-        #       outputvis=f'{fields_split_dir}/{formated_target}'
-        #                 f'/{formated_target}.calibrated.avg12s.ms',
+        os.makedirs(f"{fields_split_dir}/{formated_field}")
+        print(f"Splitting field {field_to_split} into "
+                     f"-->> {working_directory}/fields/{formated_field}"
+                     f"/{formated_field}.calibrated.ms")
+        # split(vis=vis_to_split,
+        #       outputvis=f'{fields_split_dir}/{formated_field}'
+        #                 f'/{formated_field}.calibrated.avg12s.ms',
         #       datacolumn='corrected', field=target, timebin='12s')
         try:
-            if os.path.exists(f'{fields_split_dir}/{formated_target}/{formated_target}.calibrated.ms'):
-                logging.info(f"{formated_target}.calibrated.ms exists. Will not create a new one")
+            if timebin_avg == '':
+                if os.path.exists(f'{fields_split_dir}/{formated_field}/{formated_field}.calibrated.ms'):
+                    print(f"{formated_field}.calibrated.ms exists. Will not create a new one")
+                else:
+                    split(vis=vis_to_split,
+                          outputvis=f'{fields_split_dir}/{formated_field}/{formated_field}.calibrated.ms',
+                          datacolumn='corrected', field=field_to_split)
+
+                if os.path.exists(f'{fields_split_dir}/{formated_field}/{formated_field}.calibrated.avg12s.ms'):
+                    print(f"{formated_field}.calibrated.ms exists. Will not create a new one")
+                else:
+                    split(vis=vis_to_split,
+                          outputvis=f'{fields_split_dir}/{formated_field}/{formated_field}.calibrated.avg12s.ms',
+                          datacolumn='corrected', field=field_to_split,timebin='12s')
             else:
-                split(vis=vis,
-                      outputvis=f'{fields_split_dir}/{formated_target}/{formated_target}.calibrated.ms',
-                      datacolumn='corrected', field=target)
+                if os.path.exists(f'{fields_split_dir}/{formated_field}/{formated_field}.calibrated.avg{timebin_avg}.ms'):
+                    print(f"{formated_field}.calibrated.avg{timebin_avg}.ms exists. Will not create a new one")
+                else:
+                    split(vis=vis_to_split,
+                          outputvis=f'{fields_split_dir}/{formated_field}/{formated_field}.calibrated.avg{timebin_avg}.ms',
+                          datacolumn='corrected', field=field_to_split,timebin=timebin_avg)
         except Exception as e:
+            print(e)
             pass
 
 def flux_3C286(freq,a0=1.2515,a1=-0.4605,a2=-0.1715,a3=0.0336):
