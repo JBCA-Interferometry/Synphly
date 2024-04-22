@@ -117,7 +117,41 @@ def initial_corrections(vis):
     initial_corrections_time = initial_corrections_endtime- initial_corrections_starttime
     logging.info(f"Initial calibrations took {initial_corrections_time/ 60:.2f} minutes")
     return(init_tables, init_tables_dict)
+
+
+def get_freq():
+
+    """
+    Gets the mean frequency that is used for selecting the model in flux scaling
+
+    """
+
+    """
+    Some high frequency observations may have spw 0 in a lower frequency band (e.g. X band)
+    due to pointing calibration. So, using spw 0 may not be adequate.
+    Instead, we can take an average between all channels and spectral windows.
+    """
+    # spw = 0
+    # spw0_freq = msmd.chanfreqs(0)*1e-9
+
+    msmd.open(vis)
+    bandwidth = msmd.bandwidths()
+    nspw = len(bandwidth)
+
+
+    chan_freqs_all = np.empty(nspw, dtype=object)
+    spws_freq = np.zeros(nspw)
+
+    for nch in range(nspw):
+        chan_freqs_all[nch] = msmd.chanfreqs(nch)
+        spws_freq[nch] = np.mean(chan_freqs_all[nch])
+
+    msmd.done()
+
+    mean_freq = np.mean(spws_freq)*1e-9
     
+    return mean_freq
+
 def flux_scale_setjy(vis,flux_density=None,model_image=None,spix=None):
 
     """
@@ -149,29 +183,17 @@ def flux_scale_setjy(vis,flux_density=None,model_image=None,spix=None):
     # Get the frequency of the first spectral window
     # fix model here -- needs a way to check which models are available
 
-    """
-    Some high frequency observations may have spw 0 in a lower frequency band (e.g. X band)
-    due to pointing calibration. So, using spw 0 may not be adequate.
-    Instead, we can take an average between all channels and spectral windows.
-    """
-    # spw = 0
-    # spw0_freq = msmd.chanfreqs(0)*1e-9
 
-    msmd.open(vis)
-    bandwidth = msmd.bandwidths()
-    nspw = len(bandwidth)
+    try:
+        logging.info("Loading listfile with available models")
+        package_dir = os.path.dirname(os.path.abspath(__file__))
+        available_models = np.loadtxt(os.path.join(package_dir,'data_calibration','available_models.list'),dtype='str')
+    except FileNotFoundError:
+        logging.critical("Models listfile not found. Either check the path or create the file")
 
-
-    chan_freqs_all = np.empty(nspw, dtype=object)
-    spws_freq = np.zeros(nspw)
-
-    for nch in range(nspw):
-        chan_freqs_all[nch] = msmd.chanfreqs(nch)
-        spws_freq[nch] = np.mean(chan_freqs_all[nch])
-
-    msmd.done()
-
-    mean_freq = np.mean(spws_freq)*1e-9
+    # Call the mean freq function
+    mean_freq = get_freq()
+    
 
     if ('3C286' in flux_calibrator) or ('1331+305' in flux_calibrator):
         model = "3C286"
