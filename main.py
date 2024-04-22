@@ -328,18 +328,16 @@ if do_flag_science and 'flag_science' not in steps_performed:
 
     make_plots_stages(vis=vis_for_cal,
                       stage='after',
-                      kind='final_science',
-                      FIELDS=target_fields_arr)
-
-
+                      kind='final_science_flag',
+                      FIELDS=all_fields_str.split(','))
 
     # run_rflag(vis=vis_for_cal,field=all_fields_str,timedevscale=2.5,freqdevscale=2.5,
     #           datacolumn_to_flag='corrected',versionname='final_science_rflag')
 
-    make_plots_stages(vis=vis_for_cal,
-                      stage='after',
-                      kind='final_science_rflag',
-                      FIELDS=all_fields_str.split(','))
+    # make_plots_stages(vis=vis_for_cal,
+    #                   stage='after',
+    #                   kind='final_science_rflag',
+    #                   FIELDS=all_fields_str.split(','))
 
     logging.critical('     => Reporting data flagged final.')
     summary_final = flagdata(vis=vis_for_cal,
@@ -349,7 +347,7 @@ if do_flag_science and 'flag_science' not in steps_performed:
     steps_performed.append('flag_science')
 
 if do_split and 'split' not in steps_performed:
-    split_fields(vis=vis_for_cal)
+    split_fields(vis_for_cal)
     steps_performed.append('split')
 
 # if do_apply_science == True and 'apply_science' not in steps_performed:
