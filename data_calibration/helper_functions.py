@@ -179,11 +179,13 @@ def getms_info(vis):
         logging.critical(f"Exception {e} occured while getting sources")
 
     # get the scans
-    for source in sources:
-        myscan_numbers = msmd.scansforfield(source)
-        myscanlist = myscan_numbers.tolist()
-        logging.info(f"Scans {myscanlist} are observed on {source}")
-    
+    try:
+        for source in sources:
+            myscan_numbers = msmd.scansforfield(source)
+            myscanlist = myscan_numbers.tolist()
+            logging.info(f"Scans {myscanlist} are observed on {source}")
+    except:
+        pass
     # get the nchan
     nchan = msmd.nchan(0)
     logging.info(f"Total channels {nchan}")
