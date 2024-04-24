@@ -2,6 +2,7 @@
 import os, glob
 from casatasks import *
 from casaplotms import *
+import bdsf
 
 
 # define globals 
@@ -15,7 +16,7 @@ outlierfile = '/home/kelvin/Desktop/Synphly/selfcal/outlier_fields.txt'
 
 cell = '200mas'
 imsize = [320,320]
-niter = [ 1,1,1] # the number of iterations for each loop -- needs to be arbitrarily large
+niter = [1,1,1] # the number of iterations for each loop -- needs to be arbitrarily large
 threshold = ['0.5mJy','0.5mJy','0.5mJy'] # in mJy
 nterms = 2
 gridder = 'standard'
@@ -34,6 +35,8 @@ gaintype= ['G','G','G']
 solint = ['30s','20s','60s']
 minsnr = [0,0,0]
 
+# pybdsf
+detection_threshold = 5.0
 
 
 def set_working_dir():
@@ -57,10 +60,34 @@ def large_map():
         tclean(
             vis = vis, imagename=imagename, imsize=[5120,5120], cell=cell,
             gridder = gridder, wprojplanes = 18, deconvolver = deconvolver,
-            weighting = weighting, robust = robust, niter=10000, threshold = '0.01mJy',
+            weighting = weighting, robust = robust, niter=10000, threshold = '0.5mJy',
             nterms = nterms, pblimit = -1
         )
 
+
+def pybdsf(input_image):
+
+    # The input image is a casa .image that then gets exported to a FITS
+
+    fitsname = input_image+'.fits'
+    exportfits(imagename = input_image, fitsimage=fitsname, overwrite=True)
+
+    img = bdsf.process_image(input_image,adaptive_rms_box=False, spline_rank=4, thresh='hard',
+                            thresh_isl=True, thresh_pix = detection_threshold, advanced_opts=True,
+                            mean_map='map', rms_map =True)
+    
+    # Write out island mask and FITS catalog -- for the large map
+    
+    img.export_image(outfile=input_image+'_maskfile.fits',img_type='island_mask',img_format='casa',clobber=True)
+    img.write_catalog(outfile=input_image+'_.cat', format='fits', clobber=True, catalog_type ='gaul')
+    
+    regionfile = input_image+'.casabox'
+    ascii_file = input_image+'.ascii'
+    rmsfile = input_image+'.rmsfile'
+
+    img.write_catalog(outfile=regionfile,format='casabox',clobber=True,catalog_type='srl')
+    img.write_catalog(outfile=ascii_file, format='ascii', clobber=True, catalog_type='gaul')
+    img.export_image(outfile=rmsfile, img_type='rms', img_format='casa', clobber=True)
 
 def selfcal():
 
@@ -90,6 +117,7 @@ def selfcal():
                 nterms = nterms, pblimit = -1,interactive=False
             )
 
+            ## NB: The problem was niter -- there was a space in the list []
 
             print("Adding modelcolumn to data")
             # model images from the MTMFS images,
@@ -98,58 +126,40 @@ def selfcal():
             # plot the model column
             plotms(
                 vis=vis, xaxis='UVwave', yaxis='amp', ydatacolumn='model',avgchannel='64',avgtime='300',
-                showgui=False, plotfile=imagename+'_modelcolumn.png'
+                showgui=False, plotfile=imagename+'_modelcolumn.png', overwrite=True, width=1500, height=750,
             )
 
-            # gaincal( vis =vis, caltable = caltable, refant = refant, solint = solint[selfcal_loop],
-            #         gaintype = gaintype[selfcal_loop], gaintable=prev_caltables,  minsnr = minsnr[selfcal_loop],
-            #         calmode = calmode[selfcal_loop], append=False, parang=False
-            #         )
-            # coloraxis = ['corr','spw']
-            # for color in coloraxis:
-            #     if calmode[selfcal_loop] =='p':
-            #         plotms(
-            #             vis = caltable, xaxis='time', yaxis='phase', gridcols=3, gridrows=3,
-            #             iteraxis='antenna', coloraxis = color, showgui=False, 
-            #             plotfile=caltable.replace('.gcal',f'_{color}.png'), dpi=300
-            #         )
-            #     else:
-            #         plotms(
-            #                 vis = caltable, xaxis='time', yaxis='amp', gridcols=3, gridrows=3,
-            #                 iteraxis='antenna', coloraxis = color, showgui=False, 
-            #                 plotfile=caltable.replace('.gcal',f'_{color}.png'), dpi=300
-            #             )
+            gaincal( vis =vis, caltable = caltable, refant = refant, solint = solint[selfcal_loop],
+                    gaintype = gaintype[selfcal_loop], gaintable=prev_caltables,  minsnr = minsnr[selfcal_loop],
+                    calmode = calmode[selfcal_loop], append=False, parang=False
+                    )
+            coloraxis = ['corr','spw']
+            for color in coloraxis:
+                if calmode[selfcal_loop] =='p':
+                    plotms(
+                        vis = caltable, xaxis='time', yaxis='phase', gridcols=3, gridrows=3,
+                        iteraxis='antenna', coloraxis = color, showgui=False, overwrite=True,
+                        plotfile=caltable.replace('.gcal',f'_{color}.png'), dpi=300, width=1500, height=750,
+                    )
+                else:
+                    plotms(
+                            vis = caltable, xaxis='time', yaxis='amp', gridcols=3, gridrows=3,
+                            iteraxis='antenna', coloraxis = color, showgui=False, overwrite=True,
+                            plotfile=caltable.replace('.gcal',f'_{color}.png'), dpi=300, width=1500, height=750
+                        )
 
-            # if selfcal_loop == nloops-1:
-            #     prev_caltables = sorted(glob.glob('*.gcal'))
-            #     print("Applying the caltable derived from last gaincal iteration")
-            #     applycal(vis=vis, gaintable = prev_caltables, parang=False )
+            if selfcal_loop == nloops-1:
+                prev_caltables = sorted(glob.glob('*.gcal'))
+                print("Applying the caltable derived from last gaincal iteration")
+                applycal(vis=vis, gaintable = prev_caltables, parang=False )
 
   
 
 
 
 set_working_dir()
-# large_map()
-selfcal()
+large_map()
+# selfcal()
 
 
 
-# imagename='target_trial'
-# tclean(
-#     vis = vis, imagename=imagename, imsize=imsize, cell=cell,
-#     gridder = gridder, wprojplanes = wprojplanes, deconvolver = deconvolver,
-#     weighting = weighting, robust = robust, niter=1, threshold = '0.25mJy',
-#     nterms = nterms, pblimit = -1, savemodel= 'modelcolumn',interactive=False
-# )
-
-# plotms(
-#     vis=vis, xaxis='UVwave', yaxis='amp', ydatacolumn='model',avgchannel='64',avgtime='300',
-#     showgui=False, plotfile=imagename+'.png'
-# )
-
-
-# caltable='target_trial.gcal'
-# gaincal(vis =vis, caltable = caltable, refant = refant, solint = '30s',
-#                     gaintype = 'G', gaintable='',  minsnr = 3,
-#                     calmode = 'p', append=False, parang=False)
