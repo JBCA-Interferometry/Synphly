@@ -6,8 +6,8 @@ import bdsf
 
 
 # define globals 
-vis = '/home/kelvin/Desktop/vla/working_directory/fields/M15X-2/M15X-2.calibrated.ms'
-# vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/2123+1007.ms'
+# vis = '/home/kelvin/Desktop/vla/working_directory/fields/M15X-2/M15X-2.calibrated.ms'
+vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/2123+1007.ms'
 working_directory = '/home/kelvin/Desktop/vla/working_directory/selfcal'
 outlierfile = '/home/kelvin/Desktop/Synphly/selfcal/outlier_fields.txt'
 
@@ -39,6 +39,9 @@ minsnr = [3,3,3]
 # pybdsf
 detection_threshold = 5.0
 
+# final image and peeling
+niter_final = 100000
+threshold_final = '100e-6mJy'
 
 def set_working_dir():
 
@@ -69,7 +72,6 @@ def large_map():
 def pybdsf(input_image):
 
     # The input image is a casa .image that then gets exported to a FITS
-
     fitsname = input_image+'.fits'
     exportfits(imagename = input_image, fitsimage=fitsname, overwrite=True)
 
@@ -78,7 +80,6 @@ def pybdsf(input_image):
                             mean_map='map', rms_map =True)
     
     # Write out island mask and FITS catalog -- for the large map
-    
     img.export_image(outfile=input_image+'_maskfile.fits',img_type='island_mask',img_format='fits',clobber=True)
     img.write_catalog(outfile=input_image+'_.cat', format='fits', clobber=True, catalog_type ='gaul')
     
@@ -165,6 +166,14 @@ def selfcal():
                 applycal(vis=vis, gaintable = prev_caltables, parang=False )
 
         # tclean here to make the final image
+        print("Make final image with all sefcal corrections applied")
+        imagename = imagename+'.final' 
+        tclean(
+            vis = vis, imagename = imagename, imsize=imsize, cell=cell, gridder=gridder,
+            wprojplanes = wprojplanes, deconvolver = deconvolver, weighting = weighting,
+            robust = robust, niter=niter_final, threshold = threshold_final, nterms=nterms,
+            pblimit=pblimit, interactive=False
+        )
 
   
 
