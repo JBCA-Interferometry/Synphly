@@ -6,8 +6,8 @@ import bdsf
 
 
 # define globals 
-vis = '/home/kelvin/Desktop/vla/working_directory/fields/M15X-2/M15X-2.calibrated.ms'
-# vis = '/home/kelvin/Desktop/vla/working_directory/fields/J2139+1423/J2139+1423.calibrated.ms'
+# vis = '/home/kelvin/Desktop/vla/working_directory/fields/M15X-2/M15X-2.calibrated.ms'
+vis = '/home/kelvin/Desktop/vla/working_directory/fields/J2139+1423/J2139+1423.calibrated.ms'
 working_directory = '/home/kelvin/Desktop/vla/working_directory/selfcal'
 outlierfile = '/home/kelvin/Desktop/Synphly/selfcal/outlier_fields.txt'
 
@@ -16,8 +16,8 @@ outlierfile = '/home/kelvin/Desktop/Synphly/selfcal/outlier_fields.txt'
 
 cell = '200mas'
 imsize = [320,320]
-niter = [1,1,1] # the number of iterations for each loop -- needs to be arbitrarily large
-threshold = ['0.5mJy','0.5mJy','0.5mJy'] # in mJy
+niter = [10000,20000,100000] # the number of iterations for each loop -- needs to be arbitrarily large
+threshold = ['0.5mJy','0.05mJy','0.005mJy'] # in mJy
 nterms = 2
 gridder = 'standard'
 deconvolver = 'mtmfs'
@@ -25,15 +25,16 @@ weighting='briggs'
 robust = -0.5
 wprojplanes = 1
 outlier_file = '/home/kelvin/Desktop/Synphly/selfcal/outlier_fields.txt'
+pblimit = 0.1 # avoid 1,-1 or 0
 
 # selfcal
 refant = 'ea28'
-nloops = 1 # number of selfcal loops
+nloops = 3 # number of selfcal loops
 loop = 0 # large image for selfcal part 1
 calmode = ['p','p','ap']
 gaintype= ['G','G','G']
-solint = ['30s','20s','60s']
-minsnr = [0,0,0]
+solint = ['30s','15s','60s']
+minsnr = [1,1,1]
 
 # pybdsf
 detection_threshold = 5.0
@@ -61,7 +62,7 @@ def large_map():
             vis = vis, imagename=imagename, imsize=[5120,5120], cell=cell,
             gridder = gridder, wprojplanes = 18, deconvolver = deconvolver,
             weighting = weighting, robust = robust, niter=10000, threshold = '0.5mJy',
-            nterms = nterms, pblimit = -1
+            nterms = nterms, pblimit = pblimit
         )
 
 
@@ -118,7 +119,7 @@ def selfcal():
                 vis = vis, imagename=imagename, imsize=imsize, cell=cell,
                 gridder = gridder, wprojplanes = wprojplanes, deconvolver = deconvolver,
                 weighting = weighting, robust = robust, niter=niter[selfcal_loop], threshold = threshold[selfcal_loop],
-                nterms = nterms, pblimit = -1,interactive=False
+                nterms = nterms, pblimit = pblimit, interactive=False
             )
 
             ## NB: The problem was niter -- there was a space in the list []
@@ -163,7 +164,7 @@ def selfcal():
 
 set_working_dir()
 # large_map()
-# selfcal()
-pybdsf(input_image='large_map.image.tt0')
+selfcal()
+# pybdsf(input_image='large_map.image.tt0')
 
 
