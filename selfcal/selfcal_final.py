@@ -6,8 +6,8 @@ import bdsf
 
 
 # define globals 
-# vis = '/home/kelvin/Desktop/vla/working_directory/fields/M15X-2/M15X-2.calibrated.ms'
-vis = '/home/kelvin/Desktop/vla/working_directory/fields/J2139+1423/J2139+1423.calibrated.ms'
+vis = '/home/kelvin/Desktop/vla/working_directory/fields/M15X-2/M15X-2.calibrated.ms'
+# vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/2123+1007.ms'
 working_directory = '/home/kelvin/Desktop/vla/working_directory/selfcal'
 outlierfile = '/home/kelvin/Desktop/Synphly/selfcal/outlier_fields.txt'
 
@@ -15,7 +15,7 @@ outlierfile = '/home/kelvin/Desktop/Synphly/selfcal/outlier_fields.txt'
 # imaging and selfcal globals
 
 cell = '200mas'
-imsize = [320,320]
+imsize = [640,640]
 niter = [10000,20000,100000] # the number of iterations for each loop -- needs to be arbitrarily large
 threshold = ['0.5mJy','0.05mJy','0.005mJy'] # in mJy
 nterms = 2
@@ -25,7 +25,7 @@ weighting='briggs'
 robust = -0.5
 wprojplanes = 1
 outlier_file = '/home/kelvin/Desktop/Synphly/selfcal/outlier_fields.txt'
-pblimit = 0.1 # avoid 1,-1 or 0
+pblimit = -0.1 # avoid 1,-1 or 0
 
 # selfcal
 refant = 'ea28'
@@ -33,8 +33,8 @@ nloops = 3 # number of selfcal loops
 loop = 0 # large image for selfcal part 1
 calmode = ['p','p','ap']
 gaintype= ['G','G','G']
-solint = ['30s','15s','60s']
-minsnr = [1,1,1]
+solint = ['60s','30s','180s']
+minsnr = [3,3,3]
 
 # pybdsf
 detection_threshold = 5.0
@@ -114,6 +114,7 @@ def selfcal():
         
         else:
             # imagename = f'target_selfcal_{selfcal_loop}'
+           
             print(f"Making image {imagename}")
             tclean(
                 vis = vis, imagename=imagename, imsize=imsize, cell=cell,
@@ -128,7 +129,7 @@ def selfcal():
             # model images from the MTMFS images,
             ft(vis = vis, model=[imagename+'.model.tt0',imagename+'.model.tt1'], nterms=2,usescratch=True)
 
-            # plot the model column
+            # Plot the model column
             plotms(
                 vis=vis, xaxis='UVwave', yaxis='amp', ydatacolumn='model',avgchannel='64',avgtime='300',
                 showgui=False, plotfile=imagename+'_modelcolumn.png', overwrite=True, width=1500, height=750,
@@ -152,11 +153,18 @@ def selfcal():
                             iteraxis='antenna', coloraxis = color, showgui=False, overwrite=True,
                             plotfile=caltable.replace('.gcal',f'_{color}.png'), dpi=300, width=1500, height=750
                         )
+            # Plot the corrected/model column to check quality of selfcal 
+            plotms(
+                vis = vis, xaxis = 'UVwave',yaxis='amp', ydatacolumn='corrected/model', avgchannel='64',
+                avgtime='300', showgui=False, plotfile = imagename+'_corrected_model.png',overwrite=True, width=1500, height=750,
+            )
 
             if selfcal_loop == nloops-1:
                 prev_caltables = sorted(glob.glob('*.gcal'))
                 print("Applying the caltable derived from last gaincal iteration")
                 applycal(vis=vis, gaintable = prev_caltables, parang=False )
+
+        # tclean here to make the final image
 
   
 
