@@ -72,13 +72,13 @@ def pybdsf(input_image):
     fitsname = input_image+'.fits'
     exportfits(imagename = input_image, fitsimage=fitsname, overwrite=True)
 
-    img = bdsf.process_image(input_image,adaptive_rms_box=False, spline_rank=4, thresh='hard',
+    img = bdsf.process_image(fitsname,adaptive_rms_box=False, spline_rank=4, thresh='hard',
                             thresh_isl=True, thresh_pix = detection_threshold, advanced_opts=True,
                             mean_map='map', rms_map =True)
     
     # Write out island mask and FITS catalog -- for the large map
     
-    img.export_image(outfile=input_image+'_maskfile.fits',img_type='island_mask',img_format='casa',clobber=True)
+    img.export_image(outfile=input_image+'_maskfile.fits',img_type='island_mask',img_format='fits',clobber=True)
     img.write_catalog(outfile=input_image+'_.cat', format='fits', clobber=True, catalog_type ='gaul')
     
     regionfile = input_image+'.casabox'
@@ -87,7 +87,11 @@ def pybdsf(input_image):
 
     img.write_catalog(outfile=regionfile,format='casabox',clobber=True,catalog_type='srl')
     img.write_catalog(outfile=ascii_file, format='ascii', clobber=True, catalog_type='gaul')
-    img.export_image(outfile=rmsfile, img_type='rms', img_format='casa', clobber=True)
+    img.export_image(outfile=rmsfile, img_type='rms', img_format='fits', clobber=True)
+
+
+def find_outliers():
+    pass
 
 def selfcal():
 
@@ -158,8 +162,8 @@ def selfcal():
 
 
 set_working_dir()
-large_map()
+# large_map()
 # selfcal()
-
+pybdsf(input_image='large_map.image.tt0')
 
 
