@@ -11,7 +11,7 @@ import bdsf
 vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/luca_split.ms'
 working_directory = '/home/kelvin/Desktop/vla/working_directory/selfcal'
 outlierfile = '/home/kelvin/Desktop/Synphly/selfcal/outlier_fields.txt'
-
+basename = os.path.splitext(os.path.basename(vis))[0]
 
 # imaging and selfcal globals
 
@@ -93,7 +93,7 @@ def selfcal_part1():
     """
     
     global first_part_imagename
-    first_part_imagename = vis.replace('.ms','_first_masking')
+    first_part_imagename = basename + '_first_masking'
 
     if not os.path.exists(first_part_imagename):
         print(f"Making {first_part_imagename}")
@@ -134,9 +134,9 @@ def selfcal_part2():
             applycal(vis=vis, gaintable = prev_caltables, parang=False )
     
         else:
-
-            imagename = vis.replace('.ms','')+f'_{selfcal_loop}'
-            prev_image = vis.replace('.ms','')+f'_{selfcal_loop-1}'
+            
+            imagename = basename +f'_{selfcal_loop}'
+            prev_image = basename +f'_{selfcal_loop-1}'
             # check if a previous imagename exists and use that to make a pybdsf mask
 
             if selfcal_loop == 1:
@@ -153,7 +153,7 @@ def selfcal_part2():
                 # for the other region files
                 # this condition will not exist for selfcal_loop 1
                 print("Making casabox mask using pybdsf")
-                regionfile = pybdsf(input_image=imagename+'.image.tt0')
+                regionfile = pybdsf(input_image=prev_image+'.image.tt0')
                 print(f"Region file {regionfile} successfully made from {prev_image}")
 
             
@@ -201,10 +201,10 @@ def selfcal_part2():
                 avgtime='300', showgui=False, plotfile = imagename+'_corrected_model.png',overwrite=True, width=1500, height=750,
             )
 
-        #     if selfcal_loop == nloops:
-        #         prev_caltables = sorted(glob.glob('*.gcal'))
-        #         print("Applying the caltable derived from last gaincal iteration")
-        #         applycal(vis=vis, gaintable = prev_caltables, parang=False )
+            if selfcal_loop == nloops:
+                prev_caltables = sorted(glob.glob('*.gcal'))
+                print("Applying the caltable derived from last gaincal iteration")
+                applycal(vis=vis, gaintable = prev_caltables, parang=False )
 
 
         # #  tclean here to make the final image
@@ -235,7 +235,9 @@ def peeling():
     if os.path.exists(container):
         singularity_bind = os.path.join(os.path.dirname(os.path.dirname(wsclean_sif)))
 
-    ## NB: WSclean needs to find an image named my-image-model.fits or reg 
+    ## NB: wsclean needs to find an image named my-image-model.fits or reg 
+    ## works by replacing model column with model for the problem sources using
+
 
     cmd = ['wsclean', '-log-time', '-predict', '-field', '', '-channels-out', '16' '-name','image', '-abs-mem','2', vis]
 
