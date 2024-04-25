@@ -18,7 +18,7 @@ basename = os.path.splitext(os.path.basename(vis))[0]
 cell = '300mas'
 imsize = [320,320]
 niter = [1,2,3] # the number of iterations for each loop -- needs to be arbitrarily large
-threshold = ['0.5mJy','0.05mJy','0.005mJy'] # in mJy
+threshold = ['0.1mJy','0.05mJy','0.005mJy'] # in mJy
 nterms = 2
 gridder = 'standard'
 deconvolver = 'mtmfs'
@@ -67,9 +67,9 @@ def pybdsf(input_image):
     fitsname = imagename+'.fits'
     exportfits(imagename = input_image, fitsimage=fitsname, overwrite=True)
 
-    img = bdsf.process_image(fitsname,adaptive_rms_box=False, spline_rank=4, thresh='hard',
+    img = bdsf.process_image(fitsname,adaptive_rms_box=True, thresh='hard',
                             thresh_isl=True, thresh_pix = detection_threshold, advanced_opts=True,
-                            mean_map='map', rms_map =True)
+                            mean_map='map', rms_map =True, group_by_isl=False)
     
     # Write out island mask and FITS catalog -- for the large map
     img.export_image(outfile=imagename+'.maskfile.fits',img_type='island_mask',img_format='fits',clobber=True)
@@ -100,7 +100,7 @@ def selfcal_part1():
         tclean(
             vis = vis, imagename=first_part_imagename, imsize=[320,320], cell=cell,
             gridder = gridder, wprojplanes = 1, deconvolver = deconvolver,
-            weighting = weighting, robust = robust, niter=1000, threshold = '1mJy',
+            weighting = weighting, robust = robust, niter=1000, threshold = '0.5mJy',
             nterms = nterms, pblimit = pblimit
         )
 
@@ -131,11 +131,17 @@ def selfcal_part2():
 
 
         if len(prev_caltables) >0 and calmode[selfcal_loop-1] !='':
+            print("I am applying the first portion of applycal")
             applycal(vis=vis, gaintable = prev_caltables, parang=False )
-    
+
+        ### TODO: Major bug here -- if you dont include this if statement, the first
+        ### one executes and the selfcal loop only runs only one loop
+        imagename = basename +f'_{selfcal_loop}'
+        if os.path.exists(imagename):
+            print("Continuing to the next image")
+        
         else:
-            
-            imagename = basename +f'_{selfcal_loop}'
+            # imagename = basename +f'_{selfcal_loop}'
             prev_image = basename +f'_{selfcal_loop-1}'
             # check if a previous imagename exists and use that to make a pybdsf mask
 
@@ -202,20 +208,26 @@ def selfcal_part2():
             )
 
             if selfcal_loop == nloops:
+                print("I am running the second portion of applycal")
                 prev_caltables = sorted(glob.glob('*.gcal'))
                 print("Applying the caltable derived from last gaincal iteration")
                 applycal(vis=vis, gaintable = prev_caltables, parang=False )
 
 
-        # #  tclean here to make the final image
-        # print("Make final image with all sefcal corrections applied")
-        # imagename = imagename+'.final' 
-        # tclean(
-        #     vis = vis, imagename = imagename, imsize=imsize, cell=cell, gridder=gridder,
-        #     wprojplanes = wprojplanes, deconvolver = deconvolver, weighting = weighting,
-        #     robust = robust, niter=niter_final, threshold = threshold_final, nterms=nterms,
-        #     pblimit=pblimit, interactive=False
-        # )
+        ## Get the last imagename from the loop and generate a final mask
+        
+        imagename = basename +f'_{len(nloops)}'
+        print(f"Generating mask from pybdsf using image {imagename}")
+        regionfile = pybdsf(input_image=imagename+'.image.tt0')
+        ##  tclean here to make the final image
+        print("Make final image with all sefcal corrections applied")
+        imagename = imagename+'.final' 
+        tclean(
+            vis = vis, imagename = imagename, imsize=imsize, cell=cell, gridder=gridder,
+            wprojplanes = wprojplanes, deconvolver = deconvolver, weighting = weighting,
+            robust = robust, niter=niter_final, threshold = threshold_final, nterms=nterms,
+            pblimit=pblimit, interactive=False, usemask = 'user', mask=regionfile,
+        )
         #### Use the output here to peel -- wsclean predict should work
         ### implement using wsclean -- also no need to create a large image
   
