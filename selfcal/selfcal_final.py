@@ -7,16 +7,17 @@ import bdsf
 
 # define globals 
 # vis = '/home/kelvin/Desktop/vla/working_directory/fields/M15X-2/M15X-2.calibrated.ms'
-vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/2123+1007.ms'
+# vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/2123+1007.ms'
+vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/luca.ms'
 working_directory = '/home/kelvin/Desktop/vla/working_directory/selfcal'
 outlierfile = '/home/kelvin/Desktop/Synphly/selfcal/outlier_fields.txt'
 
 
 # imaging and selfcal globals
 
-cell = '200mas'
-imsize = [640,640]
-niter = [10000,20000,100000] # the number of iterations for each loop -- needs to be arbitrarily large
+cell = '300mas'
+imsize = [320,320]
+niter = [10000,10000,500000] # the number of iterations for each loop -- needs to be arbitrarily large
 threshold = ['0.5mJy','0.05mJy','0.005mJy'] # in mJy
 nterms = 2
 gridder = 'standard'
@@ -34,7 +35,7 @@ loop = 0 # large image for selfcal part 1
 calmode = ['p','p','ap']
 gaintype= ['G','G','G']
 solint = ['60s','30s','180s']
-minsnr = [3,3,3]
+minsnr = [1,1,1]
 
 # pybdsf
 detection_threshold = 5.0
@@ -55,47 +56,56 @@ def set_working_dir():
     os.chdir(working_directory)
 
 
-def large_map():
-    
-    imagename = 'large_map'
-
-    if not os.path.exists(imagename):
-        print("Making large image")
-        tclean(
-            vis = vis, imagename=imagename, imsize=[5120,5120], cell=cell,
-            gridder = gridder, wprojplanes = 18, deconvolver = deconvolver,
-            weighting = weighting, robust = robust, niter=10000, threshold = '0.5mJy',
-            nterms = nterms, pblimit = pblimit
-        )
 
 
-def pybdsf(input_image):
+
+def pybdsf(imagename):
 
     # The input image is a casa .image that then gets exported to a FITS
-    fitsname = input_image+'.fits'
-    exportfits(imagename = input_image, fitsimage=fitsname, overwrite=True)
+    imagename = imagename.replace('.image.tt0','')
+    fitsname = imagename+'.fits'
+    exportfits(imagename = imagename+'.tt0', fitsimage=fitsname, overwrite=True)
 
     img = bdsf.process_image(fitsname,adaptive_rms_box=False, spline_rank=4, thresh='hard',
                             thresh_isl=True, thresh_pix = detection_threshold, advanced_opts=True,
                             mean_map='map', rms_map =True)
     
     # Write out island mask and FITS catalog -- for the large map
-    img.export_image(outfile=input_image+'_maskfile.fits',img_type='island_mask',img_format='fits',clobber=True)
-    img.write_catalog(outfile=input_image+'_.cat', format='fits', clobber=True, catalog_type ='gaul')
+    img.export_image(outfile=imagename+'.maskfile.fits',img_type='island_mask',img_format='fits',clobber=True)
+    img.write_catalog(outfile=imagename+'.cat', format='fits', clobber=True, catalog_type ='gaul')
     
-    regionfile = input_image+'.casabox'
-    ascii_file = input_image+'.ascii'
-    rmsfile = input_image+'.rmsfile'
+    regionfile = imagename+'.casabox'
+    ascii_file = imagename+'.ascii'
+    rmsfile = imagename+'.rmsfile'
 
     img.write_catalog(outfile=regionfile,format='casabox',clobber=True,catalog_type='srl')
     img.write_catalog(outfile=ascii_file, format='ascii', clobber=True, catalog_type='gaul')
     img.export_image(outfile=rmsfile, img_type='rms', img_format='fits', clobber=True)
 
+    return regionfile
 
-def find_outliers():
-    pass
+def selfcal_part1():
 
-def selfcal():
+    """
+    Creates an (a large) an image that is used to create a casa region file using pybdsf 
+    for masking
+    """
+    
+    imagename = 'large_map'
+
+    if not os.path.exists(imagename):
+        print("Making large image")
+        tclean(
+            vis = vis, imagename=imagename, imsize=[320], cell=cell,
+            gridder = gridder, wprojplanes = 1, deconvolver = deconvolver,
+            weighting = weighting, robust = robust, niter=100000, threshold = '0.5mJy',
+            nterms = nterms, pblimit = pblimit
+        )
+
+
+
+
+def selfcal_part2():
 
     if os.path.exists(outlier_file) and open(outlier_file).read() == '':
         outlierfile = ''
@@ -106,16 +116,16 @@ def selfcal():
     for selfcal_loop in range(nloops):
         caltable = f'caltable_{selfcal_loop}.gcal'
         prev_caltables = sorted(glob.glob('*.gcal'))
+
         if len(prev_caltables) >0 and calmode[selfcal_loop] !='':
             applycal(vis=vis, gaintable = prev_caltables, parang=False )
     
-        imagename = f'target_selfcal_{selfcal_loop}'
-        if os.path.exists(imagename):
-            print("Continuing to the next image")
+        # imagename = f'target_selfcal_{selfcal_loop}'
+        # if os.path.exists(imagename):
+        #     print("Continuing to the next image")
         
         else:
-            # imagename = f'target_selfcal_{selfcal_loop}'
-           
+            
             print(f"Making image {imagename}")
             tclean(
                 vis = vis, imagename=imagename, imsize=imsize, cell=cell,
@@ -181,7 +191,20 @@ def selfcal():
 
 set_working_dir()
 # large_map()
-selfcal()
-# pybdsf(input_image='large_map.image.tt0')
+# selfcal()
+# pybdsf(imagename='large_map.image.tt0')
+
+imagename = 'masking_trial'
+imagename='large_map.image.tt0'
+imagename = imagename.replace('.tt0','')
+maskfile = imagename+'.maskfile.fits'
+
+tclean(
+    vis = vis, imagename=imagename, imsize=[320], cell=cell,
+    gridder = gridder, wprojplanes = 1, deconvolver = deconvolver,
+    weighting = weighting, robust = robust, niter=100000, threshold = '0.01mJy',
+    nterms = nterms, pblimit = pblimit, usemask='user', mask='large_map.image.casabox',
+    interactive=True
+)
 
 
