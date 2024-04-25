@@ -6,7 +6,7 @@ import bdsf
 
 
 # define globals 
-# vis = '/home/kelvin/Desktop/vla/working_directory/fields/M15X-2/M15X-2.calibrated.ms'
+# vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/M15X-2.calibrated.ms'
 # vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/2123+1007.ms'
 vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/luca_split.ms'
 working_directory = '/home/kelvin/Desktop/vla/working_directory/selfcal'
@@ -16,8 +16,8 @@ basename = os.path.splitext(os.path.basename(vis))[0]
 # imaging and selfcal globals
 
 cell = '300mas'
-imsize = [320,320]
-niter = [1,2,3] # the number of iterations for each loop -- needs to be arbitrarily large
+imsize = [640,640]
+niter = [1000,20000,300000] # the number of iterations for each loop -- needs to be arbitrarily large
 threshold = ['0.1mJy','0.05mJy','0.005mJy'] # in mJy
 nterms = 2
 gridder = 'standard'
@@ -41,8 +41,8 @@ minsnr = [1,1,1]
 detection_threshold = 5.0
 
 # final image and peeling
-niter_final = 100000
-threshold_final = '100e-6mJy'
+niter_final = 1000000
+threshold_final = '10e-6mJy'
 wsclean_sif= '/home/kelvin/Desktop/singularity/wsclean-v3.3-no-cuda.sif'
 
 def set_working_dir():
@@ -69,8 +69,8 @@ def pybdsf(input_image):
 
     img = bdsf.process_image(fitsname,adaptive_rms_box=True, thresh='hard',
                             thresh_isl=True, thresh_pix = detection_threshold, advanced_opts=True,
-                            mean_map='map', rms_map =True, group_by_isl=False)
-    
+                            mean_map='map', rms_map =True, group_by_isl=True)
+    # adaptive_rms_box=False, spline_rank=4, thresh='hard', thresh_isl=True, thresh_pix = detection_threshold
     # Write out island mask and FITS catalog -- for the large map
     img.export_image(outfile=imagename+'.maskfile.fits',img_type='island_mask',img_format='fits',clobber=True)
     img.write_catalog(outfile=imagename+'.cat', format='fits', clobber=True, catalog_type ='gaul')
@@ -98,77 +98,172 @@ def selfcal_part1():
     if not os.path.exists(first_part_imagename):
         print(f"Making {first_part_imagename}")
         tclean(
-            vis = vis, imagename=first_part_imagename, imsize=[320,320], cell=cell,
+            vis = vis, imagename=first_part_imagename, imsize=imsize, cell=cell,
             gridder = gridder, wprojplanes = 1, deconvolver = deconvolver,
-            weighting = weighting, robust = robust, niter=1000, threshold = '0.5mJy',
+            weighting = weighting, robust = robust, niter=10000, threshold = '0.5mJy',
             nterms = nterms, pblimit = pblimit
         )
+
+    regionfile = pybdsf(input_image=first_part_imagename+'.image.tt0')
+
+# def selfcal_part2():
+
+#     """
+    
+#     For the first iteration where no existing image has been created, the region file is 
+#     created from the tclean in selfcal_part1
+
+#     Afterwards, the masking is done using the regionfile generated from the previous iteration
+    
+#     """
+
+#     if os.path.exists(outlier_file) and open(outlier_file).read() == '':
+#         outlierfile = ''
+
+#     print("Deleting model column before selfcal")
+#     delmod(vis=vis,otf=True)
+
+#     # flag to check the selfcal one loop has been used
+   
+
+#     for selfcal_loop in range(1,nloops+1): # force selfcal_loop to start at 1
+#         caltable = f'caltable_{selfcal_loop}.gcal'
+#         prev_caltables = sorted(glob.glob('*.gcal'))
+
+
+#         if len(prev_caltables) >0 and calmode[selfcal_loop-1] !='':
+#             applycal(vis=vis, gaintable = prev_caltables, parang=False )
+            
+
+#         ### TODO: Major bug here -- if you dont include this if statement, the first
+#         ### one executes and the selfcal loop only runs only one loop
+#         imagename = basename +f'_{selfcal_loop}'
+#         if os.path.exists(imagename):
+#             print("Continuing to the next image")
+        
+#         else:
+#             # imagename = basename +f'_{selfcal_loop}'
+#             prev_image = basename +f'_{selfcal_loop-1}'
+#             # check if a previous imagename exists and use that to make a pybdsf mask
+
+#             if selfcal_loop == 1:
+#                 # ensures that the code runs only once
+#                 first_part_imagename = vis.replace('.ms','_first_masking')
+#                 # Here you use the image generated from selfcal part 1
+#                 print(f"This is selfcal loop {selfcal_loop-1}, you have not made any images")
+#                 regionfile = pybdsf(input_image=first_part_imagename+'.image.tt0') # 
+#                 print(f"Masking will use regionfile {regionfile} made from {first_part_imagename}")
+#                 #set flag to True
+#                 selfcal1_region_processed = True
+
+#             else:
+#                 # for the other region files
+#                 # this condition will not exist for selfcal_loop 1
+#                 print("Making casabox mask using pybdsf")
+#                 regionfile = pybdsf(input_image=prev_image+'.image.tt0')
+#                 print(f"Region file {regionfile} successfully made from {prev_image}")
+
+            
+#             print(f"Making image {imagename}")
+#             tclean(
+#                 vis = vis, imagename=imagename, imsize=imsize, cell=cell,
+#                 gridder = gridder, wprojplanes = wprojplanes, deconvolver = deconvolver,
+#                 weighting = weighting, robust = robust, niter=niter[selfcal_loop-1], threshold = threshold[selfcal_loop-1],
+#                 nterms = nterms, pblimit = pblimit, interactive=False, usemask='user', mask=regionfile, 
+#             )
+
+#             ## NB: The problem was niter -- there was a space in the list []
+
+#             print("Adding modelcolumn to data")
+#             # model images from the MTMFS images,
+#             ft(vis = vis, model=[imagename+'.model.tt0',imagename+'.model.tt1'], nterms=2,usescratch=True)
+
+#             # Plot the model column
+#             plotms(
+#                 vis=vis, xaxis='UVwave', yaxis='amp', ydatacolumn='model',avgchannel='64',avgtime='300',
+#                 showgui=False, plotfile=imagename+'_modelcolumn.png', overwrite=True, width=1500, height=750,
+#             )
+
+#             gaincal( vis =vis, caltable = caltable, refant = refant, solint = solint[selfcal_loop-1],
+#                     gaintype = gaintype[selfcal_loop-1], gaintable=prev_caltables,  minsnr = minsnr[selfcal_loop-1],
+#                     calmode = calmode[selfcal_loop-1], append=False, parang=False
+#                     )
+#             coloraxis = ['corr','spw']
+#             for color in coloraxis:
+#                 if selfcal_loop < len(calmode) and calmode[selfcal_loop] == 'p':
+#                     plotms(
+#                         vis = caltable, xaxis='time', yaxis='phase', gridcols=3, gridrows=3,
+#                         iteraxis='antenna', coloraxis = color, showgui=False, overwrite=True,
+#                         plotfile=caltable.replace('.gcal',f'_{color}.png'), dpi=300, width=1500, height=750,
+#                     )
+#                 else:
+#                     plotms(
+#                             vis = caltable, xaxis='time', yaxis='amp', gridcols=3, gridrows=3,
+#                             iteraxis='antenna', coloraxis = color, showgui=False, overwrite=True,
+#                             plotfile=caltable.replace('.gcal',f'_{color}.png'), dpi=300, width=1500, height=750
+#                         )
+#             # Plot the corrected/model column to check quality of selfcal 
+#             plotms(
+#                 vis = vis, xaxis = 'UVwave',yaxis='amp', ydatacolumn='corrected/model', avgchannel='64',
+#                 avgtime='300', showgui=False, plotfile = imagename+'_corrected_model.png',overwrite=True, width=1500, height=750,
+#             )
+
+#             if selfcal_loop == nloops:
+#                 print("I am running the second portion of applycal")
+#                 prev_caltables = sorted(glob.glob('*.gcal'))
+#                 print("Applying the caltable derived from last gaincal iteration")
+#                 applycal(vis=vis, gaintable = prev_caltables, parang=False )
+
+
+#         # Get the last imagename from the loop and generate a final mask
+        
+#         imagename = basename +f'_{nloops}'
+#         print(f"Generating mask from pybdsf using image {imagename}")
+#         regionfile = pybdsf(input_image=imagename+'.image.tt0')
+#         ##  tclean here to make the final image
+#         print("Make final image with all selfcal corrections applied")
+#         imagename = imagename+'.final' 
+#         tclean(
+#             vis = vis, imagename = imagename, imsize=imsize, cell=cell, gridder=gridder,
+#             wprojplanes = wprojplanes, deconvolver = deconvolver, weighting = weighting,
+#             robust = robust, niter=niter_final, threshold = threshold_final, nterms=nterms,
+#             pblimit=pblimit, interactive=False, usemask = 'user', mask=regionfile,
+#         )
+#         ### Use the output here to peel -- wsclean predict should work
+#         ## implement using wsclean -- also no need to create a large image
+  
+
 
 
 def selfcal_part2():
 
-    """
-    
-    For the first iteration where no existing image has been created, the region file is 
-    created from the tclean in selfcal_part1
-
-    Afterwards, the masking is done using the regionfile generated from the previous iteration
-    
-    """
-
     if os.path.exists(outlier_file) and open(outlier_file).read() == '':
         outlierfile = ''
+
+    regionfile = basename + '_first_masking.casabox'
 
     print("Deleting model column before selfcal")
     delmod(vis=vis,otf=True)
 
-    # flag to check the selfcal one loop has been used
-   
-
-    for selfcal_loop in range(1,nloops+1): # force selfcal_loop to start at 1
+    for selfcal_loop in range(nloops):
         caltable = f'caltable_{selfcal_loop}.gcal'
         prev_caltables = sorted(glob.glob('*.gcal'))
-
-
-        if len(prev_caltables) >0 and calmode[selfcal_loop-1] !='':
-            print("I am applying the first portion of applycal")
+        if len(prev_caltables) >0 and calmode[selfcal_loop] !='':
             applycal(vis=vis, gaintable = prev_caltables, parang=False )
-
-        ### TODO: Major bug here -- if you dont include this if statement, the first
-        ### one executes and the selfcal loop only runs only one loop
-        imagename = basename +f'_{selfcal_loop}'
+    
+        imagename = f'target_selfcal_{selfcal_loop}'
         if os.path.exists(imagename):
             print("Continuing to the next image")
         
         else:
-            # imagename = basename +f'_{selfcal_loop}'
-            prev_image = basename +f'_{selfcal_loop-1}'
-            # check if a previous imagename exists and use that to make a pybdsf mask
-
-            if selfcal_loop == 1:
-                # ensures that the code runs only once
-                first_part_imagename = vis.replace('.ms','_first_masking')
-                # Here you use the image generated from selfcal part 1
-                print(f"This is selfcal loop {selfcal_loop-1}, you have not made any images")
-                regionfile = pybdsf(input_image=first_part_imagename+'.image.tt0') # 
-                print(f"Masking will use regionfile {regionfile} made from {first_part_imagename}")
-                #set flag to True
-                selfcal1_region_processed = True
-
-            else:
-                # for the other region files
-                # this condition will not exist for selfcal_loop 1
-                print("Making casabox mask using pybdsf")
-                regionfile = pybdsf(input_image=prev_image+'.image.tt0')
-                print(f"Region file {regionfile} successfully made from {prev_image}")
-
-            
+            # imagename = f'target_selfcal_{selfcal_loop}'
             print(f"Making image {imagename}")
             tclean(
                 vis = vis, imagename=imagename, imsize=imsize, cell=cell,
+                parallel=False,
                 gridder = gridder, wprojplanes = wprojplanes, deconvolver = deconvolver,
-                weighting = weighting, robust = robust, niter=niter[selfcal_loop-1], threshold = threshold[selfcal_loop-1],
-                nterms = nterms, pblimit = pblimit, interactive=False, usemask='user', mask=regionfile, 
+                weighting = weighting, robust = robust, niter=niter[selfcal_loop], threshold = threshold[selfcal_loop],
+                nterms = nterms, pblimit = -1,interactive=False, usemask='user', mask=regionfile
             )
 
             ## NB: The problem was niter -- there was a space in the list []
@@ -177,15 +272,15 @@ def selfcal_part2():
             # model images from the MTMFS images,
             ft(vis = vis, model=[imagename+'.model.tt0',imagename+'.model.tt1'], nterms=2,usescratch=True)
 
-            # Plot the model column
+            # plot the model column
             plotms(
                 vis=vis, xaxis='UVwave', yaxis='amp', ydatacolumn='model',avgchannel='64',avgtime='300',
                 showgui=False, plotfile=imagename+'_modelcolumn.png', overwrite=True, width=1500, height=750,
             )
 
-            gaincal( vis =vis, caltable = caltable, refant = refant, solint = solint[selfcal_loop-1],
-                    gaintype = gaintype[selfcal_loop-1], gaintable=prev_caltables,  minsnr = minsnr[selfcal_loop-1],
-                    calmode = calmode[selfcal_loop-1], append=False, parang=False
+            gaincal( vis =vis, caltable = caltable, refant = refant, solint = solint[selfcal_loop],
+                    gaintype = gaintype[selfcal_loop], gaintable=prev_caltables,  minsnr = minsnr[selfcal_loop],
+                    calmode = calmode[selfcal_loop], append=False, parang=False
                     )
             coloraxis = ['corr','spw']
             for color in coloraxis:
@@ -201,36 +296,29 @@ def selfcal_part2():
                             iteraxis='antenna', coloraxis = color, showgui=False, overwrite=True,
                             plotfile=caltable.replace('.gcal',f'_{color}.png'), dpi=300, width=1500, height=750
                         )
-            # Plot the corrected/model column to check quality of selfcal 
-            plotms(
-                vis = vis, xaxis = 'UVwave',yaxis='amp', ydatacolumn='corrected/model', avgchannel='64',
-                avgtime='300', showgui=False, plotfile = imagename+'_corrected_model.png',overwrite=True, width=1500, height=750,
-            )
 
-            if selfcal_loop == nloops:
-                print("I am running the second portion of applycal")
+            if selfcal_loop == nloops-1:
                 prev_caltables = sorted(glob.glob('*.gcal'))
                 print("Applying the caltable derived from last gaincal iteration")
                 applycal(vis=vis, gaintable = prev_caltables, parang=False )
-
-
-        ## Get the last imagename from the loop and generate a final mask
         
-        imagename = basename +f'_{len(nloops)}'
-        print(f"Generating mask from pybdsf using image {imagename}")
-        regionfile = pybdsf(input_image=imagename+'.image.tt0')
-        ##  tclean here to make the final image
-        print("Make final image with all sefcal corrections applied")
-        imagename = imagename+'.final' 
-        tclean(
-            vis = vis, imagename = imagename, imsize=imsize, cell=cell, gridder=gridder,
-            wprojplanes = wprojplanes, deconvolver = deconvolver, weighting = weighting,
-            robust = robust, niter=niter_final, threshold = threshold_final, nterms=nterms,
-            pblimit=pblimit, interactive=False, usemask = 'user', mask=regionfile,
-        )
-        #### Use the output here to peel -- wsclean predict should work
-        ### implement using wsclean -- also no need to create a large image
-  
+        # ### Get the last imagename from the loop and generate a final mask
+        
+        # imagename = basename +f'_{nloops-1}'
+        # ##  tclean here to make the final image
+        # print("Make final image with all selfcal corrections applied")
+        # imagename = imagename+'.final' 
+        # tclean(
+        #     vis = vis, imagename = imagename, imsize=imsize, cell=cell, gridder=gridder,
+        #     wprojplanes = wprojplanes, deconvolver = deconvolver, weighting = weighting,
+        #     robust = robust, niter=niter_final, threshold = threshold_final, nterms=nterms,
+        #     pblimit=pblimit, interactive=False, usemask = 'user', mask=regionfile,
+        # )
+        # ### Use the output here to peel -- wsclean predict should work
+        # ## implement using wsclean -- also no need to create a large image
+
+        
+
 def peeling():
 
     """
@@ -241,6 +329,10 @@ def peeling():
     Then perform uvsub in CASA
 
     """
+
+    # Make a region file of the final self calibrated image and use it to peel the sources
+    imagename = basename +f'_{nloops-1}'
+    regionfile_to_peel = pybdsf(input_image=imagename+'.image.tt0')
 
     
     container = wsclean_sif
@@ -272,25 +364,7 @@ def peeling():
 
 
 
-
-
 set_working_dir()
-selfcal_part1()
+# selfcal_part1()
 selfcal_part2()
-
-# pybdsf(imagename='large_map.image.tt0')
-
-# imagename = 'masking_trial'
-# imagename='large_map.image.tt0'
-# imagename = imagename.replace('.tt0','')
-# maskfile = imagename+'.maskfile.fits'
-
-# tclean(
-#     vis = vis, imagename=imagename, imsize=[320], cell=cell,
-#     gridder = gridder, wprojplanes = 1, deconvolver = deconvolver,
-#     weighting = weighting, robust = robust, niter=100000, threshold = '0.01mJy',
-#     nterms = nterms, pblimit = pblimit, usemask='user', mask='large_map.image.casabox',
-#     interactive=True
-# )
-
 
