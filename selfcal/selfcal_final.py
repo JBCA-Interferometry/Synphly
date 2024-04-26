@@ -16,7 +16,7 @@ basename = os.path.splitext(os.path.basename(vis))[0]
 # imaging and selfcal globals
 
 cell = '200mas'
-imsize = [320,320]
+imsize = [320,320] # has to be[x,y] otherwise wsclean in function peeling will fail
 niter = [1,2,3] # the number of iterations for each loop -- needs to be arbitrarily large
 threshold = ['0.1mJy','0.05mJy','0.025mJy'] # in mJy
 nterms = 2
@@ -44,6 +44,9 @@ detection_threshold = 5.0
 niter_final = 1000000
 threshold_final = '10e-6mJy'
 wsclean_sif= '/home/kelvin/Desktop/singularity/wsclean-v3.3-no-cuda.sif'
+
+spw = 17 # wsclean chan out
+abs_mem = 4 # mem to use in GB
 
 def set_working_dir():
 
@@ -176,10 +179,9 @@ def selfcal_part2():
         
         # ### Get the last imagename from the loop and generate a final mask
         
-    imagename = basename +f'_{nloops-1}'
+    imagename = basename +f'_{nloops-1}'+'.final'
     ##  tclean here to make the final image
     print("Make final image with all selfcal corrections applied")
-    imagename = imagename+'.final' 
     tclean(
         vis = vis, imagename = imagename, imsize=imsize, cell=cell, gridder=gridder,
         wprojplanes = wprojplanes, deconvolver = deconvolver, weighting = weighting,
@@ -189,7 +191,8 @@ def selfcal_part2():
     ### Use the output here to peel -- wsclean predict should work
     ## implement using wsclean -- also no need to create a large image
 
-        
+
+
 
 def peeling():
 
@@ -203,8 +206,12 @@ def peeling():
     """
 
     # Make a region file of the final self calibrated image and use it to peel the sources
-    imagename = basename +f'_{nloops-1}'
-    regionfile_to_peel = pybdsf(input_image=imagename+'.image.tt0')
+    imagename = basename +f'_{nloops-1}'+'.final.image.tt0'
+    regionfile_to_peel = pybdsf(input_image=imagename)
+    fitsmask = imagename.replace('.image.tt0','')+'.maskfile.fits'
+    model_fits = imagename.replace('.final.image.tt0','.final.image.tt0-model.fits')
+    os.rename(fitsmask,model_fits )
+
 
     
     container = wsclean_sif
@@ -214,10 +221,36 @@ def peeling():
     ## NB: wsclean needs to find an image named my-image-model.fits or reg 
     ## works by replacing model column with model for the problem sources using
 
+    threshold_cmd = ['wsclean', '-auto-threshold','3', '-size', f'{imsize[0]}', f'{imsize[1]}','-scale', f'{cell}',\
+                    '-mgain', '0.8', '-niter', '500000',f'{vis}']
+    predict_cmd = ['wsclean', '-log-time', '-predict', '-field', '', '-reorder' ,'-name', f'{imagename}', '-abs-mem',f'{abs_mem}', vis]
 
-    cmd = ['wsclean', '-log-time', '-predict', '-field', '', '-channels-out', '16' '-name','image', '-abs-mem','2', vis]
+    command_to_execute = ['singularity', 'exec', '-B', singularity_bind, container] + predict_cmd
+    try:
+        print("Executing: %s", ' '.join(command_to_execute))
+        process = subprocess.Popen(command_to_execute, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        stdout, stderr = process.communicate()
+        print("stdout: %s", stdout)
+        print("stderr: %s", stderr)
 
-    command_to_execute = ['singularity', 'exec', '-B', singularity_bind, container] + cmd
+        return_code = process.returncode
+        if return_code == 0:
+            print(f"Strategy executed successfully. Output:\n{stdout}")
+        else:
+            print(f"Error executing strategy. Return code: {return_code}\nError message: {stderr}")  
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    
+    ## Subtract the models put in the model column from the data and make an image
+        
+    print("Running uvsub")
+    uvsub(vis=vis)
+
+    ## Run wsclean to check if the subtraction has been successful
+
+    command_to_execute = ['singularity', 'exec', '-B', singularity_bind, container] + threshold_cmd
     try:
         print("Executing: %s", ' '.join(command_to_execute))
         process = subprocess.Popen(command_to_execute, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
@@ -236,7 +269,10 @@ def peeling():
 
 
 
+
+
 set_working_dir()
-selfcal_part1()
-selfcal_part2()
+# selfcal_part1()
+# selfcal_part2()
+peeling()
 
