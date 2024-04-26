@@ -265,7 +265,7 @@ def peeling():
     run_wsclean(threshold_cmd)
 
 
-def pb_correction():
+def pb_corrections():
 
     """
     Performs the primary beam correction after imaging -- performs wideband primary beam correction
