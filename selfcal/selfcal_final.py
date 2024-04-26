@@ -8,14 +8,15 @@ import bdsf
 # define globals 
 # vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/M15X-2.calibrated.ms'
 # vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/2123+1007.ms'
-vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/luca_split.ms'
+# vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/luca_split.ms'
+vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/luca.ms'
 working_directory = '/home/kelvin/Desktop/vla/working_directory/selfcal'
 outlierfile = '/home/kelvin/Desktop/Synphly/selfcal/outlier_fields.txt'
 basename = os.path.splitext(os.path.basename(vis))[0]
 
 # imaging and selfcal globals
 
-cell = '200mas'
+cell = '300mas'
 imsize = [640,640] # has to be[x,y] otherwise wsclean in function peeling will fail
 niter = [1000,10000,30000] # the number of iterations for each loop -- needs to be arbitrarily large
 threshold = ['0.1mJy','0.05mJy','0.025mJy'] # in mJy
@@ -104,7 +105,7 @@ def selfcal_part1():
         tclean(
             vis = vis, imagename=first_part_imagename, imsize=imsize, cell=cell,
             gridder = gridder, wprojplanes = wprojplanes, deconvolver = deconvolver,
-            weighting = weighting, robust = robust, niter=10000, threshold = '0.5mJy',
+            weighting = weighting, robust = robust, niter=1000, threshold = '0.5mJy',
             nterms = nterms, pblimit = pblimit
         )
 
@@ -264,10 +265,24 @@ def peeling():
     run_wsclean(threshold_cmd)
 
 
+def pb_correction():
+
+    """
+    Performs the primary beam correction after imaging -- performs wideband primary beam correction
+    """
+
+    # NB: Check which imagename is to be used here -- probably should be the one after the source subtraction or before?
+    imagename = basename +f'_{nloops-1}'+'.final.image'
+
+    widebandpbcor(
+        vis = vis, imagename = [imagename+'.tt0', imagename+'.tt1'], nterms=2, action = 'pbcor'
+    )
+
+
 
 
 set_working_dir()
-selfcal_part1()
+# selfcal_part1()
 selfcal_part2()
 peeling()
 
