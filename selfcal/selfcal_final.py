@@ -16,8 +16,8 @@ basename = os.path.splitext(os.path.basename(vis))[0]
 # imaging and selfcal globals
 
 cell = '200mas'
-imsize = [320,320] # has to be[x,y] otherwise wsclean in function peeling will fail
-niter = [1,2,3] # the number of iterations for each loop -- needs to be arbitrarily large
+imsize = [640,640] # has to be[x,y] otherwise wsclean in function peeling will fail
+niter = [1000,10000,30000] # the number of iterations for each loop -- needs to be arbitrarily large
 threshold = ['0.1mJy','0.05mJy','0.025mJy'] # in mJy
 nterms = 2
 gridder = 'standard'
@@ -42,8 +42,9 @@ detection_threshold = 5.0
 
 # final image and peeling
 niter_final = 1000000
-threshold_final = '10e-6mJy'
+threshold_final = '0.01mJy'
 wsclean_sif= '/home/kelvin/Desktop/singularity/wsclean-v3.3-no-cuda.sif'
+singularity_bind = '/home/kelvin/Desktop/'
 
 spw = 17 # wsclean chan out
 abs_mem = 4 # mem to use in GB
@@ -193,6 +194,33 @@ def selfcal_part2():
 
 
 
+def run_wsclean(command):
+
+    """
+    Runs wsclean commands 
+    """
+
+    container = wsclean_sif
+    if os.path.exists(container):
+        singularity_bind = os.path.join(os.path.dirname(os.path.dirname(wsclean_sif)))
+
+    command_to_execute = ['singularity', 'exec', '-B', singularity_bind, container] + command
+    try:
+        print("Executing: %s", ' '.join(command_to_execute))
+        process = subprocess.Popen(command_to_execute, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        stdout, stderr = process.communicate()
+        print("stdout: %s", stdout)
+        print("stderr: %s", stderr)
+
+        return_code = process.returncode
+        if return_code == 0:
+            print(f"Strategy executed successfully. Output:\n{stdout}")
+        else:
+            print(f"Error executing strategy. Return code: {return_code}\nError message: {stderr}")  
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
 
 def peeling():
 
@@ -213,66 +241,33 @@ def peeling():
     os.rename(fitsmask,model_fits )
 
 
+    threshold_cmd = ['wsclean', '-auto-threshold','3', '-size', f'{imsize[0]}', f'{imsize[1]}','-scale', f'{cell}',\
+                    '-mgain', '0.8', '-niter', '0',f'{vis}']
     
-    container = wsclean_sif
-    if os.path.exists(container):
-        singularity_bind = os.path.join(os.path.dirname(os.path.dirname(wsclean_sif)))
+    predict_cmd = ['wsclean', '-log-time', '-predict', '-field', '', '-reorder' ,'-name', f'{imagename}', '-abs-mem',f'{abs_mem}', vis]
+
+
+    run_wsclean(predict_cmd)
 
     ## NB: wsclean needs to find an image named my-image-model.fits or reg 
     ## works by replacing model column with model for the problem sources using
 
-    threshold_cmd = ['wsclean', '-auto-threshold','3', '-size', f'{imsize[0]}', f'{imsize[1]}','-scale', f'{cell}',\
-                    '-mgain', '0.8', '-niter', '500000',f'{vis}']
-    predict_cmd = ['wsclean', '-log-time', '-predict', '-field', '', '-reorder' ,'-name', f'{imagename}', '-abs-mem',f'{abs_mem}', vis]
-
-    command_to_execute = ['singularity', 'exec', '-B', singularity_bind, container] + predict_cmd
-    try:
-        print("Executing: %s", ' '.join(command_to_execute))
-        process = subprocess.Popen(command_to_execute, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-        stdout, stderr = process.communicate()
-        print("stdout: %s", stdout)
-        print("stderr: %s", stderr)
-
-        return_code = process.returncode
-        if return_code == 0:
-            print(f"Strategy executed successfully. Output:\n{stdout}")
-        else:
-            print(f"Error executing strategy. Return code: {return_code}\nError message: {stderr}")  
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
+    
     
     ## Subtract the models put in the model column from the data and make an image
         
     print("Running uvsub")
     uvsub(vis=vis)
 
-    ## Run wsclean to check if the subtraction has been successful
+    ## Run wsclean to check if the subtraction has been successful -- make dirty map
 
-    command_to_execute = ['singularity', 'exec', '-B', singularity_bind, container] + threshold_cmd
-    try:
-        print("Executing: %s", ' '.join(command_to_execute))
-        process = subprocess.Popen(command_to_execute, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-        stdout, stderr = process.communicate()
-        print("stdout: %s", stdout)
-        print("stderr: %s", stderr)
-
-        return_code = process.returncode
-        if return_code == 0:
-            print(f"Strategy executed successfully. Output:\n{stdout}")
-        else:
-            print(f"Error executing strategy. Return code: {return_code}\nError message: {stderr}")  
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
+    run_wsclean(threshold_cmd)
 
 
 
 
 set_working_dir()
-# selfcal_part1()
-# selfcal_part2()
+selfcal_part1()
+selfcal_part2()
 peeling()
 
