@@ -15,9 +15,9 @@ basename = os.path.splitext(os.path.basename(vis))[0]
 
 # imaging and selfcal globals
 
-cell = '300mas'
-imsize = [640,640]
-niter = [1000,20000,300000] # the number of iterations for each loop -- needs to be arbitrarily large
+cell = '200mas'
+imsize = [320,320]
+niter = [1,2,3] # the number of iterations for each loop -- needs to be arbitrarily large
 threshold = ['0.1mJy','0.05mJy','0.025mJy'] # in mJy
 nterms = 2
 gridder = 'standard'
@@ -99,7 +99,7 @@ def selfcal_part1():
         print(f"Making {first_part_imagename}")
         tclean(
             vis = vis, imagename=first_part_imagename, imsize=imsize, cell=cell,
-            gridder = gridder, wprojplanes = 1, deconvolver = deconvolver,
+            gridder = gridder, wprojplanes = wprojplanes, deconvolver = deconvolver,
             weighting = weighting, robust = robust, niter=10000, threshold = '0.5mJy',
             nterms = nterms, pblimit = pblimit
         )
@@ -176,18 +176,18 @@ def selfcal_part2():
         
         # ### Get the last imagename from the loop and generate a final mask
         
-        imagename = basename +f'_{nloops-1}'
-        ##  tclean here to make the final image
-        print("Make final image with all selfcal corrections applied")
-        imagename = imagename+'.final' 
-        tclean(
-            vis = vis, imagename = imagename, imsize=imsize, cell=cell, gridder=gridder,
-            wprojplanes = wprojplanes, deconvolver = deconvolver, weighting = weighting,
-            robust = robust, niter=niter_final, threshold = threshold_final, nterms=nterms,
-            pblimit=pblimit, interactive=False, usemask = 'user', mask=regionfile,
-        )
-        ### Use the output here to peel -- wsclean predict should work
-        ## implement using wsclean -- also no need to create a large image
+    imagename = basename +f'_{nloops-1}'
+    ##  tclean here to make the final image
+    print("Make final image with all selfcal corrections applied")
+    imagename = imagename+'.final' 
+    tclean(
+        vis = vis, imagename = imagename, imsize=imsize, cell=cell, gridder=gridder,
+        wprojplanes = wprojplanes, deconvolver = deconvolver, weighting = weighting,
+        robust = robust, niter=niter_final, threshold = threshold_final, nterms=nterms,
+        pblimit=pblimit, interactive=False, usemask = 'user', mask=regionfile,
+    )
+    ### Use the output here to peel -- wsclean predict should work
+    ## implement using wsclean -- also no need to create a large image
 
         
 
@@ -237,6 +237,6 @@ def peeling():
 
 
 set_working_dir()
-# selfcal_part1()
+selfcal_part1()
 selfcal_part2()
 
