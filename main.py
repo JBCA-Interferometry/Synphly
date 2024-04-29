@@ -317,8 +317,7 @@ if do_apply_science and 'apply_science' not in steps_performed:
 
 if do_run_statwt and 'run_statwt' not in steps_performed:
     statwt(vis=vis_for_cal, preview=False,
-           datacolumn='corrected',
-           timebin='12s', statalg='chauvenet')
+           datacolumn='corrected', statalg='chauvenet')
     steps_performed.append('run_statwt')
 
 if do_flag_science and 'flag_science' not in steps_performed:
