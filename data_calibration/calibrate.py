@@ -1,12 +1,3 @@
-available_models = ['3C123_P.im', '3C138_K.im', '3C138_Q.im', '3C138_X.im', '3C147_K.im',
-                    '3C147_Q.im', '3C147_X.im', '3C286_C.im', '3C286_P.im', '3C286_U.im',
-                    '3C380_P.im', '3C48_K.im', '3C48_Q.im', '3C48_X.im', '3C138_A.im',
-                    '3C138_L.im', '3C138_S.im', '3C147_A.im', '3C147_L.im', '3C147_S.im',
-                    '3C196_P.im', '3C286_K.im', '3C286_Q.im', '3C286_X.im', '3C48_A.im',
-                    '3C48_L.im', '3C48_S.im', '3C138_C.im', '3C138_P.im', '3C138_U.im',
-                    '3C147_C.im', '3C147_P.im', '3C147_U.im', '3C286_A.im',
-                    '3C286_L.im', '3C286_S.im', '3C295_P.im', '3C48_C.im',
-                    '3C48_P.im', '3C48_U.im']
 
 def initial_corrections(vis):
     """
@@ -152,50 +143,43 @@ def get_freq():
     
     return mean_freq
 
-def flux_scale_setjy(vis,flux_density=None,model_image=None,spix=None):
+def flux_scale_setjy(vis,model_image):
 
     """
     Sets the flux scale
     """
 
-    try:
-        logging.info("Clearing model column")
-        delmod(vis, otf=True, scr=False)
-        logging.info("Successfully deleted model column")
-    except Exception as e:
-        logging.critical(f"Exception {e} while deleting model column")
+    # try:
+    #     logging.info("Deleting the model column and re-initialising calibrations")
+    #     delmod(vis, otf=True, scr=False)
+    #     clearcal(vis)
+    #     logging.info("Successfully deleted model column and cleared calibrations")
+    # except Exception as e:
+    #     logging.critical(f"Exception {e} while deleting model column")
 
-    try:
-        logging.info("Re-initialize the calibration")
-        clearcal(vis)
-        logging.info("Successfully cleared the calibration")
-    except Exception as e:
-        logging.critical(f"Exception {e} while clearing calibrations")
 
-    logging.info(f'Setting the flux scaling using {flux_calibrator}')
+    
     if os.path.exists(vis + '.flagversions/flags.before_setjy/'):
-        # logging.info(f"Restoring flags from {vis}.flagversions/flags.before_setjy/")
+        logging.info(f"Restoring flags from {vis}.flagversions/flags.before_setjy/")
         flagmanager(vis=vis, mode='restore', versionname='before_setjy')
     else:
-        # logging.info(f"Saving flags from {vis}.flagversions/flags.before_setjy/")
+        logging.info(f"Saving flags from {vis}.flagversions/flags.before_setjy/")
         flagmanager(vis=vis, mode='save', versionname='before_setjy')
-
-    # Get the frequency of the first spectral window
-    # fix model here -- needs a way to check which models are available
-
 
     try:
         logging.info("Loading listfile with available models")
         package_dir = os.path.dirname(os.path.abspath(__file__))
         available_models = np.loadtxt(os.path.join(package_dir,'data_calibration','available_models.list'),dtype='str')
     except FileNotFoundError:
-        logging.critical("Models listfile not found. Either check the path or create the file")
+        logging.critical("Models listfile not found. Ensure that file is in path or create one")
 
     # Call the mean freq function
     mean_freq = get_freq()
     
-
-    if ('3C286' in flux_calibrator) or ('1331+305' in flux_calibrator):
+    plots_dir = os.path.join(working_directory).rstrip('/')+'/'+ 'plots'
+    ## TODO:  This needs more work -- this isnt the most efficient way of coding it
+    ## some models for older measurement sets have different naming schemes
+    if ('3C286' in flux_calibrator) or ('1331+3030' in flux_calibrator):
         model = "3C286"
     if ('3C48' in flux_calibrator) or ('0137+331' in flux_calibrator):
         model = "3C48"
@@ -205,102 +189,94 @@ def flux_scale_setjy(vis,flux_density=None,model_image=None,spix=None):
         model = "3C138"
 
 
-    freq_ranges = {
-        (1, 2): "L",
-        (2, 4): "S",
-        (4, 8): "C",
-        (8, 12): "X",
-        (12, 18): "U", #U is also the Ku band.
-        (18,26.5):"K",
-        (26.5,40): "A", #is Ka the A band?
-        (40, 50): "Q",
-            }
+    freq_ranges = {(1, 2): "L",(2, 4): "S",(4, 8): "C",(8, 12): "X",(12, 18): "Ku", (18,26.5):"K", (26.5,40): "Ka", (40, 50): "Q"}
+    
+    model_files = []
 
-    # model = ''
-
-    for range_,band in freq_ranges.items():
-        if mean_freq>=range_[0] and mean_freq<=range_[1]:
-            logging.info(f"Observations done in band: {band}")
-            logging.info(f"Will use model {model}_{band}.im for absolute flux calibration")
-            model = model+f'_{band}.im'
-
-    if model not in available_models:
-        logging.warning(f"Model {model} not available for band {band}.")
-        logging.warning(f"Will use set flux density to [1,0,0,0] for absolute flux "
-                        f"calibration, which may be wrong. Please, provide the flux density "
-                        f"using the arguments fluxdensity=[I,Q,U,V] and standard='manual' in setjy.")
-        flux_density = [1.0,0.0,0.0,0.0]
-    flux_density_data = None
-    spws = None
-    fluxes = None
+    for frequency_range, band_name in freq_ranges.items():
+        if frequency_range[0] <= mean_freq <= frequency_range[1]:
+            logging.info(f"Observations done in band: {band_name}")
+            logging.info(f"{model}_{band_name}.im will be used for absolute flux calibration")
+            model_files.append(f"{model}_{band_name}.im")
 
 
+    # Check if any model files were selected
+    if flux_calibrator is not None:
+        for model_file in model_files:
+            if model_file in available_models:
+                model = model_file
 
-    try:
-        if flux_density == '':
-            logging.info(f"Performing absolute flux calibration using {model}")
-            flux_density_data = setjy(vis=vis, field=flux_calibrator,
-                                                spw='', model=model, scalebychan=True,
-                                                standard='Perley-Butler 2017', listmodels=False,
-                                                usescratch=True)
+                ### This is the defacto loop that wll be executed
+                # check if the constructed model file exists in available models
+                # I use a loop here although you are only expected to have a single flux cal model in the data -- the break will handle that
 
-            plots_dir = os.path.join(working_directory).rstrip('/') + '/' + 'plots'
-            spws = []
-            fluxes = []
-            # for key in list(flux_density_data['0'].keys())[:-1]:
-            for spw_id in range(nspw):
-                spws.append(spw_id)
-                fluxes.append(flux_density_data['0'][str(spw_id)]['fluxd'][0])
-            spws = np.asarray(spws)
-            fluxes = np.asarray(fluxes)
+                # try: 
+                logging.info(f"Flux scaling the data using {model}")
+                setjy(vis=vis, field=flux_calibrator, spw='',
+                    model=model, scalebychan=True, standard='Perley-Butler 2017',
+                    listmodels=False, usescratch=True )
 
-            try:
-                logging.info(f"Plotting the fluxes against frequency.")
-                plt.figure(figsize=(8, 5))
-                plt.plot(spws_freq*1e-9, fluxes, 'o', color='black')
-                plt.xlabel('Frequency [GHz]')
-                plt.ylabel(f"'Flux Density {flux_calibrator} [Jy]")
-                plt.grid()
-                plt.title('Flux density from setjy model')
-                flux_plot = os.path.join(plots_dir, flux_calibrator + '_flux_density_model.pdf')
-                plt.savefig(flux_plot, dpi=600)
-                plt.clf()
-                plt.close()
-            except Exception as e:
-                logging.warning(f"Flux plot not generated due to: {e}")
+                flux_plot = os.path.join(plots_dir, f'{model}_flux_density.pdf')
+                print(flux_plot)
+                casaplotms(vis=vis, xaxis='freq', yaxis='amp',field=flux_calibrator,
+                        coloraxis='ant2',ydatacolumn='model',antenna=refant, width=1500,
+                        height=750,showgui=False,overwrite=True, plotfile=flux_plot)
+                # except Exception as e:
+                #     logging.error(f"Error occurred during flux scaling with {model}: {e}")
+                
+                
+
         else:
-            """
-            This should be properly implemented.
-            Occasions that this can occur:
-                - When the flux density must be explicitly set as there is no model available.
-                - Similarly, when it is required to input a model image for the particular flux
-                calibrator.
-            """
-            if model_image != '':
-                logging.warning(f"Using provided model image {model_image} for flux calibrator"
-                                f" {flux_calibrator} at {band} band.")
-                flux_density_data = setjy(vis=vis, field=flux_calibrator,
-                                                    spw='', model=model_image, scalebychan=True,
-                                                    standard='Perley-Butler 2017', listmodels=False,
-                                                    usescratch=True)
+
+            logging.warning("None of the selected model files are available. "
+                            "Manual flux scaling using a point source or a model image will be attempted. "
+                            "Check results carefully")
+
+             
+            if model_image == '':
+                logging.info(f"{model_image} will be used for flux scaling")
+
+                model = model_image
+                try: 
+                    logging.info(f"Flux scaling the data using {model}")
+                    setjy(vis=vis, field=flux_calibrator, spw='',
+                            model=model, scalebychan=True, standard='Perley-Butler 2017',
+                            listmodels=False, usescratch=True )
+    
+                    flux_plot = os.path.join(plots_dir, model+'_flux_density.pdf')
+                    casaplotms(vis=vis, xaxis='freq', yaxis='amp',field=flux_calibrator,
+                            coloraxis='ant2',ydatacolumn='model',antenna=refant, width=1500,
+                            height=750,showgui=False,overwrite=True, plotfile=flux_plot)
+                except Exception as e:
+                    logging.critical(f"Error occurred during manual flux scaling: {e}")
+            
             else:
-                flux_density_data = setjy(vis=vis_for_cal, field=flux_calibrator,
-                                                    spw='', scalebychan=True,
-                                                    standard='manual', fluxdensity=flux_density,
-                                                    reffreq=f'{mean_freq}GHz',spix=spix,
-                                                    listmodels=False, usescratch=True)
-    except Exception as e:
-        logging.critical(f"Exception {e} while running setjy")
+                model = [1, 0, 0, 0] # specified flux density in Jy -- 4 stokes params
+                ## We need to think about the field here
+                logging.info(f"Attempting to flux scale the data using {model}")
+                try:
+                    flux_plot = os.path.join(plots_dir, f'{model}_flux_density.pdf')
+                    setjy(vis = vis, spw='', scalebychan=True, standard='manual', listmodels=False,
+                                            fluxdensity=model,reffreq=f'{mean_freq}GHz', usescratch=True, field=flux_calibrator)
+                    casaplotms(vis=vis, xaxis='freq', yaxis='amp',field=flux_calibrator,
+                            coloraxis='ant2',ydatacolumn='model',antenna=refant, width=1500,
+                            height=750,showgui=False,overwrite=True, plotfile=flux_plot)
+                except Exception as e:
+                    logging.critical(f"Exception {e} when flux scaling")
+        
 
-    return(flux_density_data, spws, fluxes)
+            # Handle the situation where no valid model file is found
+    else:
+        logging.critical("Absolute flux scaling not done")
+        # Handle the situation where no model files were selected
 
 
 
-def run_bandpass(vis, field, scan,
-                 refant, spw, solint, minsnr,
-                 gaintables, i, table_stage, combine, bandtype,
-                 solnorm=False,
-                 refantmode='strict', overwrite=False):
+
+
+
+def run_bandpass(vis, field, scan, refant, spw, solint, minsnr, gaintables, i, table_stage, combine, bandtype, solnorm=False,
+                refantmode='strict', overwrite=False):
 
     calibration_dir = os.path.join(working_directory).rstrip('/') + '/' + 'calibration'
     try:

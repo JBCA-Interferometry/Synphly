@@ -210,9 +210,7 @@ if do_initial_cal == True:
         logging.critical(f"Exception {e} while performing initial corrections")
 
 if do_setjy == True and 'flux_scale_setjy' not in steps_performed:
-    flux_density_data, spws, fluxes = flux_scale_setjy(vis=vis_for_cal,
-                                                       flux_density='',
-                                                       model_image='')
+    flux_scale_setjy(vis=vis_for_cal,model_image='')
     # flux_density_data, spws, fluxes = flux_scale_setjy(vis=vis_for_cal,
     #                                                    flux_density=[2.04,0.0,0.0,0.0],
     #                                                    spix = -0.88,
