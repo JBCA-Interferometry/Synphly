@@ -175,7 +175,7 @@ def apply_tfcrop(vis,field,datacolumn_to_flag = 'corrected',
     report_flag(summary_before_tfcrop, 'field')
 
 
-    flagdata(vis=vis_for_cal, mode='tfcrop', field=field, spw='',
+    flagdata(vis=vis, mode='tfcrop', field=field, spw='',
              datacolumn=datacolumn_to_flag, ntime='scan', combinescans=False,
              extendflags=False, winsize=5,maxnpieces=5,
              flagnearfreq=False,
@@ -298,9 +298,12 @@ def pre_flagging(vis):
 
     try:
         logging.info('++==>> Quacking the data')
-        flagdata(vis=vis, mode='quack', quackinterval=1.0, quackmode='beg',
+        flagdata(vis=vis, mode='quack', quackinterval=5.0, quackmode='beg',
                 reason='quack', flagbackup=False, action='apply', name='quack')
-        flagdata(vis=vis, mode='quack', quackinterval=1.0, quackmode='endb',
+        flagdata(vis=vis, mode='quack', quackinterval=60.0, quackmode='beg',
+                 field=flux_calibrator,
+                reason='quack', flagbackup=False, action='apply', name='quack')
+        flagdata(vis=vis, mode='quack', quackinterval=5.0, quackmode='endb',
                 reason='quack', flagbackup=False, action='apply', name='quack')
     except Exception as e:
         logging.error(f"Exception {e} while quacking")
