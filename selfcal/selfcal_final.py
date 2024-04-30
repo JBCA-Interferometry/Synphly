@@ -399,8 +399,7 @@ def phaseshift_image():
         imagename = f"image_{phasecenter.replace(' ','_')}"
         os.system(f'rm -r {imagename}.*')
 
-        print(f"Imaging {phasecenter[i]}")
-
+        print(f"Imaging {phasecenter}")
         tclean(
             vis=split_ms, imagename=imagename,cell=cell, niter=0,
             imsize=[256],parallel=False, deconvolver='mtmfs', nterms=2,
