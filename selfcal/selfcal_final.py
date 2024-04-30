@@ -4,6 +4,8 @@ from casatasks import *
 from casaplotms import *
 import bdsf
 
+from astropy.io import fits
+from matplotlib import pyplot as plt
 
 # define globals 
 # vis = '/home/kelvin/Desktop/vla/working_directory/selfcal/M15X-2.calibrated.ms'
@@ -295,8 +297,8 @@ def get_im_stats(imagename):
     """
 
 
-    rms=casatasks.imstat(imagename=imagename,box='51,7,247,76')['rms'][0]  # for 256x256 px
-    peak=casatasks.imstat(imagename=imagename,box='124,122,133,134')['max'][0]
+    rms=imstat(imagename=imagename,box='51,7,247,76')['rms'][0]  # for 256x256 px
+    peak=imstat(imagename=imagename,box='124,122,133,134')['max'][0]
     print('For %s, the peak %.3f mJy/beam, rms %.3f mJy/beam, S/N %6.0f\n\n' %
                 (imagename, peak*1e3, rms*1e3, peak/rms))
     
@@ -317,7 +319,7 @@ def get_im_stats(imagename):
 
 
     logfile = 'imstat.txt'
-    casa_imstat = casatasks.imstat(imagename)
+    casa_imstat = imstat(imagename)
     with open(logfile,"a") as txt_file:
         txt_file.write('For %s, the peak %.3f mJy/beam, rms %.3f mJy/beam, S/N %6.0f\n\n' %
                     (imagename, peak*1e3, rms*1e3, peak/rms))
@@ -363,51 +365,60 @@ ra_str = ', '.join([str(val) for val in ra])
 
 def phaseshift_image():
 
-    for i in range(len(ra))[1:3]:
+    for i in range(len(ra)):
         
         # ra_dir,dec_dir = phasecenter[i].split(' ')
-        ra_str = str(ra[i])
-        dec_str = str(dec[i])
+        ra_str = str(ra[i]); dec_str = str(dec[i])
         phasecenter = 'J2000' +' ' + ra_str + 'deg' + '+ ' +dec_str + 'deg'
         print(f"Phaseshifting to {phasecenter}")
 
+        
+        phaseshifted_ms = f"phaseshifted_ms_{phasecenter.replace(' ','_')}"
+        if not os.path.exists(phaseshifted_ms):
+            # subprocess.run(['rm','-r',phaseshifted_ms])
+            phaseshift(
+                vis=msname,outputvis=phaseshifted_ms,datacolumn='corrected',
+                phasecenter=phasecenter
+            )
 
-        phaseshifted_ms = f'phaseshifted_ms_{phasecenter}'
+        split_ms = f"split_ms_{phasecenter.replace(' ','_')}"
+
+        if not os.path.exists(split_ms):
+            # subprocess.run(['rm','-r',split_ms])
+            split(
+                vis=phaseshifted_ms,outputvis=split_ms,
+                datacolumn='data', timebin='30s', width=16
+                # createmms = True, 
+            )
+        ## Delete the phaseshifted_ms after averaging to save space
+        print(f"Deleting {phaseshifted_ms}")
         subprocess.run(['rm','-r',phaseshifted_ms])
-        phaseshift(
-            vis=msname,outputvis=phaseshifted_ms,datacolumn='corrected',
-            phasecenter=phasecenter
-        )
-
-        transformed_ms = 'transformed_ms_'+phasecenter[i].replace(" ","")+'.ms'
-
-        subprocess.run(['rm','-r',transformed_ms])
-        split(
-            vis=phaseshifted_ms,outputvis=transformed_ms,
-            datacolumn='data',timeaverage=True, timebin='20s',
-            # createmms = True, 
-        )
-
-        imagename = phasecenter[i].replace(" ","")
+        print(f"Successfully deleted {phaseshifted_ms}")
+        
+        imagename = f"image_{phasecenter.replace(' ','_')}"
         os.system(f'rm -r {imagename}.*')
 
         print(f"Imaging {phasecenter[i]}")
 
         tclean(
-            vis=phaseshifted_ms, imagename=imagename,cell=cell, niter=0,
+            vis=split_ms, imagename=imagename,cell=cell, niter=0,
             imsize=[256],parallel=False, deconvolver='mtmfs', nterms=2,
             weighting='briggs', robust=-0.5
         )
-        exportfits(imagename=imagename+'.image',fitsimage=imagename+'.fits',overwrite=True)
-        get_im_stats(imagename+'.image')
+        exportfits(imagename=imagename+'.image.tt0',fitsimage=imagename+'.fits',overwrite=True)
+        get_im_stats(imagename+'.image.tt0')
         plot_fits(imagename+'.fits')
 
-        print(f"Finished for {phasecenter[i]}")
+        print(f"Finished {phasecenter}")
 
 
 set_working_dir()
 # selfcal_part1()
 # selfcal_part2()
 # peeling()
-phaseshift_image()
 
+import time
+start = time.time()
+phaseshift_image()
+end = time.time()
+print(f"Phaseshifting, splitting and imaging took {(end-start) / 3600:.2f} hours")
