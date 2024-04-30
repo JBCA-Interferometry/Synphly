@@ -16,8 +16,8 @@ basename = os.path.splitext(os.path.basename(vis))[0]
 
 # imaging and selfcal globals
 
-cell = '300mas'
-imsize = [640,640] # has to be[x,y] otherwise wsclean in function peeling will fail
+cell = '60mas'
+imsize = [256,256] # has to be[x,y] otherwise wsclean in function peeling will fail
 niter = [1000,10000,30000] # the number of iterations for each loop -- needs to be arbitrarily large
 threshold = ['0.1mJy','0.05mJy','0.025mJy'] # in mJy
 nterms = 2
@@ -265,6 +265,7 @@ def peeling():
     run_wsclean(threshold_cmd)
 
 
+
 def pb_corrections():
 
     """
@@ -280,9 +281,133 @@ def pb_corrections():
 
 
 
+def direction_string(ra, dec, frame):
+  
+  """helper function for often needed string"""
+  return ' '.join([frame, ra, dec])
+
+
+def get_im_stats(imagename):
+    
+    """
+    Gets the statistics for either a 256x256 pix image and writes
+    them to a logfile
+    """
+
+
+    rms=casatasks.imstat(imagename=imagename,box='51,7,247,76')['rms'][0]  # for 256x256 px
+    peak=casatasks.imstat(imagename=imagename,box='124,122,133,134')['max'][0]
+    print('For %s, the peak %.3f mJy/beam, rms %.3f mJy/beam, S/N %6.0f\n\n' %
+                (imagename, peak*1e3, rms*1e3, peak/rms))
+    
+    # snr = peak/rms
+
+    # if snr >= 5:
+    #     casa_imstat = casatasks.imstat(imagename)
+    #     imfit_box = '124,122,133,134'
+    #     imfit_results = casatasks.imfit(imagename,box=imfit_box)
+
+        # results = cl.fromrecord(imfit_results['results'])
+        # print(results)
+
+
+        # fit_file = 'imfit.txt'
+        # with open(fit_file, "a") as txt_file:
+        #     txt_file.write(f"For {imagename}\n\n, the maximum pos for imstat is {casa_imstat['maxposf']}\n\nand the fit results are {imfit_results}")
+
+
+    logfile = 'imstat.txt'
+    casa_imstat = casatasks.imstat(imagename)
+    with open(logfile,"a") as txt_file:
+        txt_file.write('For %s, the peak %.3f mJy/beam, rms %.3f mJy/beam, S/N %6.0f\n\n' %
+                    (imagename, peak*1e3, rms*1e3, peak/rms))
+
+        txt_file.write(f"For {imagename}, the maximum pos for imstat is {casa_imstat['maxposf']}\n")
+
+
+
+def plot_fits(fitsname):
+    """
+    Plots fitsfiles using astropy
+    """
+    fitsfile = fits.open(fitsname)
+    image_data = fitsfile[0].data[0,0,:,:]
+    ny, nx = image_data.shape
+    x_center = nx // 2
+    y_center = ny // 2
+    x_new = np.arange(nx) - x_center
+    y_new = np.arange(ny) - y_center
+
+    fig, ax = plt.subplots()
+
+    # image_plot = ax.imshow(image_data, origin='lower', 
+    #                    extent=[x_new.min(), x_new.max(), y_new.min(), y_new.max()],cmap='viridis')
+    image_plot = ax.imshow(image_data, origin='lower', 
+                       extent=[-32, 32, -32, 32],cmap='viridis')
+    cbar = plt.colorbar(image_plot,ax=ax,orientation='vertical')
+    # ax.set_title(sources_to_image,fontsize=16)
+    plt.savefig(fitsname.replace('.fits','.pdf'))
+
+
+
+phasecenter = 'J2000 322.4932710322deg +12.1629471549deg'
+msname = '/home/kelvin/Downloads/M15X-2/M15X-2.calibrated.ms'
+
+import numpy as np
+coords = np.loadtxt('/home/kelvin/Desktop/gv020/hst_cuts_notebook/hacks_hb_coords.txt')
+ra = coords[:,0]
+dec = coords[:,1]
+
+ra_str = ', '.join([str(val) for val in ra])
+
+
+def phaseshift_image():
+
+    for i in range(len(ra))[1:3]:
+        
+        # ra_dir,dec_dir = phasecenter[i].split(' ')
+        ra_str = str(ra[i])
+        dec_str = str(dec[i])
+        phasecenter = 'J2000' +' ' + ra_str + 'deg' + '+ ' +dec_str + 'deg'
+        print(f"Phaseshifting to {phasecenter}")
+
+
+        phaseshifted_ms = f'phaseshifted_ms_{phasecenter}'
+        subprocess.run(['rm','-r',phaseshifted_ms])
+        phaseshift(
+            vis=msname,outputvis=phaseshifted_ms,datacolumn='corrected',
+            phasecenter=phasecenter
+        )
+
+        transformed_ms = 'transformed_ms_'+phasecenter[i].replace(" ","")+'.ms'
+
+        subprocess.run(['rm','-r',transformed_ms])
+        split(
+            vis=phaseshifted_ms,outputvis=transformed_ms,
+            datacolumn='data',timeaverage=True, timebin='20s',
+            # createmms = True, 
+        )
+
+        imagename = phasecenter[i].replace(" ","")
+        os.system(f'rm -r {imagename}.*')
+
+        print(f"Imaging {phasecenter[i]}")
+
+        tclean(
+            vis=phaseshifted_ms, imagename=imagename,cell=cell, niter=0,
+            imsize=[256],parallel=False, deconvolver='mtmfs', nterms=2,
+            weighting='briggs', robust=-0.5
+        )
+        exportfits(imagename=imagename+'.image',fitsimage=imagename+'.fits',overwrite=True)
+        get_im_stats(imagename+'.image')
+        plot_fits(imagename+'.fits')
+
+        print(f"Finished for {phasecenter[i]}")
+
 
 set_working_dir()
 # selfcal_part1()
-selfcal_part2()
-peeling()
+# selfcal_part2()
+# peeling()
+phaseshift_image()
 
