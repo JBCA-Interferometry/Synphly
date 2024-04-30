@@ -383,6 +383,7 @@ def phaseshift_image():
 
         split_ms = f"split_ms_{phasecenter.replace(' ','_')}"
 
+        print(f"Splitting to {split_ms}")
         if not os.path.exists(split_ms):
             # subprocess.run(['rm','-r',split_ms])
             split(
@@ -394,7 +395,7 @@ def phaseshift_image():
         print(f"Deleting {phaseshifted_ms}")
         subprocess.run(['rm','-r',phaseshifted_ms])
         print(f"Successfully deleted {phaseshifted_ms}")
-        
+
         imagename = f"image_{phasecenter.replace(' ','_')}"
         os.system(f'rm -r {imagename}.*')
 
@@ -403,8 +404,8 @@ def phaseshift_image():
         tclean(
             vis=split_ms, imagename=imagename,cell=cell, niter=0,
             imsize=[256],parallel=False, deconvolver='mtmfs', nterms=2,
-            weighting='briggs', robust=-0.5
-        )
+            weighting='briggs', robust=-0.5, datacolumn='data',
+            )
         exportfits(imagename=imagename+'.image.tt0',fitsimage=imagename+'.fits',overwrite=True)
         get_im_stats(imagename+'.image.tt0')
         plot_fits(imagename+'.fits')
