@@ -437,7 +437,7 @@ def make_plots_stages(vis,stage='after', kind='',
     logging.info(f"Plotting regarding {kind} for fields {FIELDS} took {make_plots_time / 60:.2f} minutes")
     pass
 
-def split_fields(vis_to_split):
+def split_fields(vis_to_split,iter=''):
     """
     Splits the ms into fields
 
@@ -482,35 +482,47 @@ def split_fields(vis_to_split):
     for field_to_split in all_ms_fields_names:
         formated_field = field_to_split.replace(' ', '').replace('/', '')
 
-        os.makedirs(f"{fields_split_dir}/{formated_field}")
+        try:
+            os.makedirs(f"{fields_split_dir}/{formated_field}")
+        except:
+            pass
         print(f"Splitting field {field_to_split} into "
                      f"-->> {working_directory}/fields/{formated_field}"
-                     f"/{formated_field}.calibrated.ms")
+                     f"/{formated_field}.calibrated{iter}.ms")
         # split(vis=vis_to_split,
         #       outputvis=f'{fields_split_dir}/{formated_field}'
         #                 f'/{formated_field}.calibrated.avg12s.ms',
         #       datacolumn='corrected', field=target, timebin='12s')
         try:
             if timebin_avg == '':
-                if os.path.exists(f'{fields_split_dir}/{formated_field}/{formated_field}.calibrated.ms'):
-                    print(f"{formated_field}.calibrated.ms exists. Will not create a new one")
+                if os.path.exists(f'{fields_split_dir}/{formated_field}/'
+                                  f'{formated_field}.calibrated{iter}.ms'):
+                    print(f"{formated_field}.calibrated{iter}.ms exists. "
+                          f"Will not create a new one.")
                 else:
                     split(vis=vis_to_split,
-                          outputvis=f'{fields_split_dir}/{formated_field}/{formated_field}.calibrated.ms',
+                          outputvis=f'{fields_split_dir}/{formated_field}/'
+                                    f'{formated_field}.calibrated{iter}.ms',
                           datacolumn='corrected', field=field_to_split)
 
-                if os.path.exists(f'{fields_split_dir}/{formated_field}/{formated_field}.calibrated.avg12s.ms'):
-                    print(f"{formated_field}.calibrated.ms exists. Will not create a new one")
+                if os.path.exists(f'{fields_split_dir}/{formated_field}/'
+                                  f'{formated_field}.calibrated{iter}.avg12s.ms'):
+                    print(f"{formated_field}.calibrated{iter}.ms exists. "
+                          f"Will not create a new one")
                 else:
                     split(vis=vis_to_split,
-                          outputvis=f'{fields_split_dir}/{formated_field}/{formated_field}.calibrated.avg12s.ms',
+                          outputvis=f'{fields_split_dir}/{formated_field}/'
+                                    f'{formated_field}.calibrated{iter}.avg12s.ms',
                           datacolumn='corrected', field=field_to_split,timebin='12s')
             else:
-                if os.path.exists(f'{fields_split_dir}/{formated_field}/{formated_field}.calibrated.avg{timebin_avg}.ms'):
-                    print(f"{formated_field}.calibrated.avg{timebin_avg}.ms exists. Will not create a new one")
+                if os.path.exists(f'{fields_split_dir}/{formated_field}/'
+                                  f'{formated_field}.calibrated{iter}.avg{timebin_avg}.ms'):
+                    print(f"{formated_field}.calibrated{iter}.avg{timebin_avg}.ms exists. "
+                          f"Will not create a new one")
                 else:
                     split(vis=vis_to_split,
-                          outputvis=f'{fields_split_dir}/{formated_field}/{formated_field}.calibrated.avg{timebin_avg}.ms',
+                          outputvis=f'{fields_split_dir}/{formated_field}/'
+                                    f'{formated_field}.calibrated{iter}.avg{timebin_avg}.ms',
                           datacolumn='corrected', field=field_to_split,timebin=timebin_avg)
         except Exception as e:
             print(e)
