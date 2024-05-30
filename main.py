@@ -266,7 +266,7 @@ if do_gain_calibration_1st_run == True and 'gain_calibration_1st' not in steps_p
                          versionname='rflag_gains_apply_1')
 
         if do_clip_data:
-            clip_data(vis=vis_for_cal,field=calibrators_all,
+            clip_data(vis=vis_for_cal,field=calibrators_all,clipminmax=[0,20],
                       datacolumn='corrected')
         # run_rflag(vis=vis_for_cal,i=1,field=calibrators_all)
 
@@ -290,7 +290,7 @@ if do_apply_science_1st_run and 'apply_science_1st_run' not in steps_performed:
             clip_data(vis=vis_for_cal, field=target,
                       datacolumn='corrected')
         split_fields(vis_for_cal,iter='_1')
-        steps_performed.append('apply_science_1st')
+        steps_performed.append('apply_science_1st_run')
     except Exception as e:
         logging.critical(f"Exception {e} while applying calibration to science.")
 
