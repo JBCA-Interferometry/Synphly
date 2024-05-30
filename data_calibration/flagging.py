@@ -75,6 +75,23 @@ def run_aoflagger_nat(vis):
     except Exception as e:
         logging.critical(f"An error occurred: {e}")
 
+def clip_data(vis,field,
+              datacolumn='data',clipminmax = [0, 1]):
+    logging.info(f" ++==>> Flagging the data with clip mode...")
+    logging.info(f"        Clipping data in the range {clipminmax}")
+    logging.info(f" ++==>> Fields to be flagged: {field}")
+    flagdata(vis=vis, mode='clip', field=field, spw='',
+             datacolumn=datacolumn, clipzeros=True, clipoutside=True,
+             extendflags=False,
+             clipminmax=clipminmax,
+             # channelavg=True, chanbin=1, timeavg=True, timebin='24s',
+             # timedevscale=timedevscale, freqdevscale=freqdevscale,
+             action='apply', flagbackup=False, savepars=False)
+    flagdata(vis=vis, mode='extend', field=field, spw='',
+                       action='apply', datacolumn=datacolumn,
+             combinescans=False, flagbackup=False,
+                       growtime=75.0, growfreq=75.0, extendpols=True)
+
 def tfcrop_raw(vis,field):
     logging.info("Running tfcrop on raw data.")
 
@@ -226,12 +243,15 @@ def pre_flagging(vis):
 
     pre_flagging_starttime = time.time()
 
-    try:
+    if not os.path.exists(vis + '.flagversions/flags.original_flags_import/'):
         logging.info('Creating flagbackup file for original ms')
         flagmanager(vis=vis, mode='save', versionname='original_flags_import',
                     comment='Original flags from import.')
-    except Exception as e:
-        logging.warning("Exception {e} when saving flags")
+    else:
+        # logging.warning("Exception {e} when saving flags")
+        logging.warning("--==>> Original flags exists. Are you reruning the code?")
+        logging.warning("++==>> Will restore the flags to the original state.")
+        flagmanager(vis=vis, mode='restore', versionname='original_flags_import')
 
     logging.info('Starting pre-flagging to the data.')
 
@@ -300,7 +320,7 @@ def pre_flagging(vis):
         logging.info('++==>> Quacking the data')
         flagdata(vis=vis, mode='quack', quackinterval=5.0, quackmode='beg',
                 reason='quack', flagbackup=False, action='apply', name='quack')
-        flagdata(vis=vis, mode='quack', quackinterval=60.0, quackmode='beg',
+        flagdata(vis=vis, mode='quack', quackinterval=10.0, quackmode='beg',
                  field=flux_calibrator,
                 reason='quack', flagbackup=False, action='apply', name='quack')
         flagdata(vis=vis, mode='quack', quackinterval=5.0, quackmode='endb',
