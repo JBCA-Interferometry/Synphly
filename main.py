@@ -83,6 +83,7 @@ edge_channel_frac = config.getfloat('flagging','edge_channel_frac')
 edge_channel_flag_frac = config.getfloat('flagging','edge_channel_flag_frac')
 do_flag_edge_channels = config.getboolean('flagging','do_flag_edge_channels')
 casa_flag_mode_strategy = config.get('flagging','casa_flag_mode_strategy')
+do_clip_data = config.getboolean('flagging','do_clip_data')
 
 # average
 do_average = config.getboolean('average','do_average')
@@ -116,6 +117,7 @@ all_solint_short_ap = config.get('calibrate','all_solint_short_ap')
 all_solint_long_p = config.get('calibrate','all_solint_long_p')
 all_solint_inf_ap = config.get('calibrate','all_solint_inf_ap')
 
+do_apply_science_1st_run = config.getboolean('calibrate','do_apply_science_1st_run')
 do_apply_science = config.getboolean('calibrate','do_apply_science')
 do_flag_science = config.getboolean('calibrate','do_flag_science')
 do_run_statwt = config.getboolean('calibrate','do_run_statwt')
@@ -263,6 +265,9 @@ if do_gain_calibration_1st_run == True and 'gain_calibration_1st' not in steps_p
                          datacolumn_to_flag='residual',
                          versionname='rflag_gains_apply_1')
 
+        if do_clip_data:
+            clip_data(vis=vis_for_cal,field=calibrators_all,
+                      datacolumn='corrected')
         # run_rflag(vis=vis_for_cal,i=1,field=calibrators_all)
 
         make_plots_stages(vis=vis_for_cal,
@@ -274,6 +279,20 @@ if do_gain_calibration_1st_run == True and 'gain_calibration_1st' not in steps_p
     except Exception as e:
         logging.critical(f"Exception {e} while running gain calibration")
 
+if do_apply_science_1st_run and 'apply_science_1st_run' not in steps_performed:
+    try:
+        apply_cal_to_science(vis=vis_for_cal,
+                             gain_tables_to_apply_science_final = gain_tables_to_apply_science_1,
+                             gainfield_bandpass_apply_final = gainfield_bandpass_apply_1,
+                             gain_tables_ampphase_for_science_final = gain_tables_ampphase_for_science_1)
+        if do_clip_data:
+            # do_flag_science
+            clip_data(vis=vis_for_cal, field=target,
+                      datacolumn='corrected')
+        split_fields(vis_for_cal,iter='_1')
+        steps_performed.append('apply_science_1st')
+    except Exception as e:
+        logging.critical(f"Exception {e} while applying calibration to science.")
 
 if do_bandpass_2nd_run == True and 'bandpass_2nd' not in steps_performed:
     try:
