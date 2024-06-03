@@ -1,10 +1,8 @@
 def run_aoflagger_sif(vis):
-
     """
     Executes singularity containers from python
 
     """
-    
 
     try:
         container = aoflagger_sif
@@ -15,14 +13,15 @@ def run_aoflagger_sif(vis):
 
     except FileNotFoundError:
         logging.critical(f"AOflagger singularity container not found")
- 
-    
-    strategy = ['aoflagger', '-v', '-indirect-read', '-fields', '', '-strategy', aoflagger_strategy, vis]
+
+    strategy = ['aoflagger', '-v', '-indirect-read', '-fields', '', '-strategy', aoflagger_strategy,
+                vis]
 
     command_to_execute = ['singularity', 'exec', '-B', singularity_bind, container] + strategy
     try:
         logging.info("Executing: %s", ' '.join(command_to_execute))
-        process = subprocess.Popen(command_to_execute, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        process = subprocess.Popen(command_to_execute, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE, universal_newlines=True)
         stdout, stderr = process.communicate()
         logging.info("stdout: %s", stdout)
         logging.info("stderr: %s", stderr)
@@ -31,7 +30,8 @@ def run_aoflagger_sif(vis):
         if return_code == 0:
             logging.info(f"Strategy executed successfully. Output:\n{stdout}")
         else:
-            logging.critical(f"Error executing strategy. Return code: {return_code}\nError message: {stderr}")  
+            logging.critical(
+                f"Error executing strategy. Return code: {return_code}\nError message: {stderr}")
 
     except Exception as e:
         logging.critical(f"An error occurred: {e}")
@@ -48,10 +48,10 @@ def run_aoflagger_nat(vis):
         summary_before_aoflagger = flagdata(vis=vis, mode='summary')
         report_flag(summary_before_aoflagger, 'field')
 
-    strategy = (['aoflagger', '-v', '-j','6', '-direct-read', '-fields', '', '-strategy',
-                aoflagger_strategy,vis])
+    strategy = (['aoflagger', '-v', '-j', '6', '-direct-read', '-fields', '', '-strategy',
+                 aoflagger_strategy, vis])
 
-    command_to_execute =  strategy
+    command_to_execute = strategy
     try:
         logging.info("Executing: %s", ' '.join(command_to_execute))
         process = subprocess.Popen(command_to_execute, stdout=subprocess.PIPE,
@@ -75,8 +75,9 @@ def run_aoflagger_nat(vis):
     except Exception as e:
         logging.critical(f"An error occurred: {e}")
 
-def clip_data(vis,field,
-              datacolumn='data',clipminmax = [0, 1]):
+
+def clip_data(vis, field,
+              datacolumn='data', clipminmax=[0, 1]):
     logging.info(f" ++==>> Flagging the data with clip mode...")
     logging.info(f"        Clipping data in the range {clipminmax}")
     logging.info(f" ++==>> Fields to be flagged: {field}")
@@ -88,11 +89,12 @@ def clip_data(vis,field,
              # timedevscale=timedevscale, freqdevscale=freqdevscale,
              action='apply', flagbackup=False, savepars=False)
     flagdata(vis=vis, mode='extend', field=field, spw='',
-                       action='apply', datacolumn=datacolumn,
+             action='apply', datacolumn=datacolumn,
              combinescans=False, flagbackup=False,
-                       growtime=75.0, growfreq=75.0, extendpols=True)
+             growtime=75.0, growfreq=75.0, extendpols=True)
 
-def tfcrop_raw(vis,field):
+
+def tfcrop_raw(vis, field):
     logging.info("Running tfcrop on raw data.")
 
     logging.info("Creating flag backup before tfcrop.")
@@ -104,16 +106,16 @@ def tfcrop_raw(vis,field):
     report_flag(summary_before_tfcrop, 'field')
 
     flagdata(vis=vis, mode='tfcrop', field=field, display='', spw='',
-                       datacolumn='data', ntime='scan', combinescans=False,
-                       extendflags=False, flagnearfreq=False, flagneartime=False,
-                       growaround=False,
-                       timecutoff=3.0, freqcutoff=3.0, maxnpieces=5, winsize=5,
-                       action='apply', flagbackup=False, savepars=True
-                       )
+             datacolumn='data', ntime='scan', combinescans=False,
+             extendflags=False, flagnearfreq=False, flagneartime=False,
+             growaround=False,
+             timecutoff=3.0, freqcutoff=3.0, maxnpieces=5, winsize=5,
+             action='apply', flagbackup=False, savepars=True
+             )
 
     flagdata(vis=vis, mode='extend', field=field, spw='', display='report',
-                       action='apply', datacolumn='data', combinescans=False, flagbackup=False,
-                       growtime=75.0, growfreq=75.0, extendpols=True)
+             action='apply', datacolumn='data', combinescans=False, flagbackup=False,
+             growtime=75.0, growfreq=75.0, extendpols=True)
 
     summary_after_tfcrop = flagdata(vis=vis, mode='summary')
     report_flag(summary_after_tfcrop, 'field')
@@ -125,21 +127,22 @@ def tfcrop_raw(vis,field):
 
 
 def report_flag(summary, axis):
-    logging.info("REPORTING FLAGGING STATS")
+    logging.info(f"  ++==>> Reporting flag statistics.")
     try:
         for id, stats in summary[axis].items():
-            logging.info('%s %s: %5.1f percent flagged' % (axis, id, 100. * stats['flagged'] / stats['total']))
+            logging.info('%s %s: %5.1f percent flagged' % (
+            axis, id, 100. * stats['flagged'] / stats['total']))
     except Exception as e:
         logging.info(f"Exception {e} while reporting flags")
-    
+    pass
 
-def run_rflag(vis, field,datacolumn_to_flag = 'corrected',
-              timedevscale = 3.0, freqdevscale = 3.0,
+def run_rflag(vis, field, datacolumn_to_flag='corrected',
+              timedevscale=3.0, freqdevscale=3.0,
               versionname='applycal_before_rflag'):
     logging.info("Running rflag")
 
     if os.path.exists(f"{vis}.flagversions/flags.{versionname}/"):
-        logging.info(f"Restoring flags from {vis}.flagversions/flags.{versionname}/")
+        logging.info(f" --==>> Restoring flags from {vis}.flagversions/flags.{versionname}/")
         flagmanager(vis=vis, mode='restore', versionname=versionname)
 
     else:
@@ -151,20 +154,20 @@ def run_rflag(vis, field,datacolumn_to_flag = 'corrected',
     summary_before_rflag = flagdata(vis=vis, mode='summary')
     report_flag(summary_before_rflag, 'field')
     try:
-        logging.info(f"Flagging column {datacolumn_to_flag}")
+        logging.info(f" ++==>> Flagging column {datacolumn_to_flag}")
         flagdata(vis=vis, mode='rflag', field=field, spw='', display='report',
-                datacolumn=datacolumn_to_flag, ntime='', combinescans=False,
-                extendflags=False, winsize=3,maxnpieces=7,
+                 datacolumn=datacolumn_to_flag, ntime='', combinescans=False,
+                 extendflags=False, winsize=3, maxnpieces=7,
                  timedevscale=timedevscale, freqdevscale=freqdevscale,
-                flagnearfreq=False, flagneartime=False, growaround=True,
-                action='apply', flagbackup=False, savepars=True
-                )
+                 flagnearfreq=False, flagneartime=False, growaround=True,
+                 action='apply', flagbackup=False, savepars=True
+                 )
 
         flagdata(vis=vis, field=field, spw='',
-                datacolumn=datacolumn_to_flag,
-                mode='extend', action='apply', display='report',
-                flagbackup=False, growtime=75.0,
-                growfreq=75.0, extendpols=False)
+                 datacolumn=datacolumn_to_flag,
+                 mode='extend', action='apply', display='report',
+                 flagbackup=False, growtime=75.0,
+                 growfreq=75.0, extendpols=False)
     except Exception as e:
         logging.error(f"Exception {e} occured while running flagdata")
 
@@ -172,18 +175,20 @@ def run_rflag(vis, field,datacolumn_to_flag = 'corrected',
     report_flag(summary_after_rflag, 'field')
 
 
-def apply_tfcrop(vis,field,datacolumn_to_flag = 'corrected',
+def apply_tfcrop(vis, field, datacolumn_to_flag='corrected',
+                 winsize=5, maxnpieces=5,
+                 timecutoff=3.0, freqcutoff=3.0,
                  versionname='applycal_before_tfcrop'):
-    logging.info('  >> Applying tfcrop...')
-    logging.info(f"  >> Using {datacolumn_to_flag} column for flagging")
-    logging.info('    ** Creating flag backup before tfcrop...')
+    logging.info(f"  ++==>> Applying tfcrop...")
+    logging.info(f"  ++==>> Using {datacolumn_to_flag} column for flagging")
+    logging.info(f"  ++==>> Creating flag backup before tfcrop...")
 
     if os.path.exists(f"{vis}.flagversions/flags.{versionname}/"):
-        logging.info(f"Restoring flags from {vis}.flagversions/flags.{versionname}/")
+        logging.info(f" --==>> Restoring flags from {vis}.flagversions/flags.{versionname}/")
         flagmanager(vis=vis, mode='restore', versionname=versionname)
 
     else:
-        logging.info('    ** Creating flag backup before tfcrop...')
+        logging.info(' ++==>> Creating flag backup before tfcrop...')
         flagmanager(vis=vis, mode='save',
                     versionname=versionname,
                     comment='Applycal before tfcrop.')
@@ -191,15 +196,15 @@ def apply_tfcrop(vis,field,datacolumn_to_flag = 'corrected',
     summary_before_tfcrop = flagdata(vis=vis, mode='summary')
     report_flag(summary_before_tfcrop, 'field')
 
-
     flagdata(vis=vis, mode='tfcrop', field=field, spw='',
              datacolumn=datacolumn_to_flag, ntime='scan', combinescans=False,
-             extendflags=False, winsize=5,maxnpieces=5,
+             extendflags=False, winsize=winsize, maxnpieces=maxnpieces,
              flagnearfreq=False,
-             flagneartime=False, growaround=True, timecutoff=2.5, freqcutoff=2.5,
+             flagneartime=False, growaround=True,
+             timecutoff=timecutoff, freqcutoff=freqcutoff,
              action='apply', flagbackup=False, savepars=False,
              )
-    logging.info('  >> Extending flags from tfcrop...')
+    logging.info('  ++==>> Extending flags from tfcrop...')
     flagdata(vis=vis, field=field, spw='',
              datacolumn=datacolumn_to_flag,
              mode='extend', action='apply', display='report',
@@ -213,11 +218,12 @@ def apply_tfcrop(vis,field,datacolumn_to_flag = 'corrected',
     # flagmanager(vis=vis_for_cal, mode='save', versionname='pre_calibration_after_tfcrop_iteraction_' + str(i),
     #             comment='Flagbackup after tfcrop/pre-calibration iteration ' + str(i))
     pass
+
+
 def manual_flagging():
-    
     logging.info(f'Flagging using user supplied flagging file {manual}')
     try:
-        flagdata(vis=vis, mode='list',inpfile=manual_file, flagbackup=False)
+        flagdata(vis=vis, mode='list', inpfile=manual_file, flagbackup=False)
         versionname = 'manual_flagging_1'
         logging.info(f'Creating new flagbackup file version {manual_flagging_1}')
         flagmanager(vis=vis, mode='save', versionname=versionname,
@@ -231,15 +237,12 @@ def manual_flagging():
         logging.warning('Supply a manual flagging file')
 
 
-
-
 def pre_flagging(vis):
-
     """
     Pre-flagging to the data.
     """
-    flags_dir = os.path.join(working_directory).rstrip('/')+'/'+'flags'
-    plots_dir = os.path.join(working_directory).rstrip('/')+'/'+ 'plots'
+    flags_dir = os.path.join(working_directory).rstrip('/') + '/' + 'flags'
+    plots_dir = os.path.join(working_directory).rstrip('/') + '/' + 'plots'
 
     pre_flagging_starttime = time.time()
 
@@ -262,8 +265,8 @@ def pre_flagging(vis):
         # report_flag(summary_0,'scan')
         # report_flag(summary_0,'antenna')
 
-    plotants(vis=vis, logpos=True, figfile=plots_dir.rstrip('/')+'/'+'_plotant_log.pdf')
-    plotants(vis=vis, logpos=False, figfile=plots_dir.rstrip('/')+'/'+'_plotant.pdf')
+    plotants(vis=vis, logpos=True, figfile=plots_dir.rstrip('/') + '/' + '_plotant_log.pdf')
+    plotants(vis=vis, logpos=False, figfile=plots_dir.rstrip('/') + '/' + '_plotant.pdf')
 
     # if report_verbosity >= 2:
     #     print('     ## Reporting data flagged after online flagging...')
@@ -275,8 +278,8 @@ def pre_flagging(vis):
     try:
         logging.info('Flagging autocorrelations')
         flagdata(vis=vis, mode='manual', autocorr=True,
-                reason='autocorr', flagbackup=False, action='apply',
-                name='autocorr')
+                 reason='autocorr', flagbackup=False, action='apply',
+                 name='autocorr')
     except Exception as e:
         logging.error(f"Exception {e} while flagging autocorrelations")
 
@@ -286,10 +289,10 @@ def pre_flagging(vis):
         report_flag(summary_autocorr, 'field')
         # report_flag(summary_autocorr,'scan')
         # report_flag(summary_autocorr,'antenna')
-    try:   
+    try:
         logging.info('++==>> Shadow flagging the data')
         flagdata(vis=vis, mode='shadow', reason='shadow', tolerance=0.0,
-             flagbackup=False, name='shadow', action='apply')
+                 flagbackup=False, name='shadow', action='apply')
     except Exception as e:
         logging.error(f"Exception {e} while shadow flagging")
 
@@ -303,7 +306,7 @@ def pre_flagging(vis):
     try:
         print('Clipping the data')
         flagdata(vis=vis, mode='clip', correlation='ABS_ALL', clipzeros=True,
-                reason='clip', flagbackup=False, action='apply', name='clip')
+                 reason='clip', flagbackup=False, action='apply', name='clip')
     except Exception as e:
         logging.error(f"Exception {e} while clipping")
 
@@ -317,14 +320,18 @@ def pre_flagging(vis):
     #  get scan length -- change the quack
 
     try:
-        logging.info('++==>> Quacking the data')
+        """
+        To do: Get the scan length and set the quack interval to 5% of the scan length
+        GL
+        """
+        logging.info('  ++==>> Quacking the data')
         flagdata(vis=vis, mode='quack', quackinterval=5.0, quackmode='beg',
-                reason='quack', flagbackup=False, action='apply', name='quack')
+                 reason='quack', flagbackup=False, action='apply', name='quack')
         flagdata(vis=vis, mode='quack', quackinterval=10.0, quackmode='beg',
                  field=flux_calibrator,
-                reason='quack', flagbackup=False, action='apply', name='quack')
+                 reason='quack', flagbackup=False, action='apply', name='quack')
         flagdata(vis=vis, mode='quack', quackinterval=5.0, quackmode='endb',
-                reason='quack', flagbackup=False, action='apply', name='quack')
+                 reason='quack', flagbackup=False, action='apply', name='quack')
     except Exception as e:
         logging.error(f"Exception {e} while quacking")
 
@@ -346,23 +353,23 @@ def pre_flagging(vis):
         _, _, chan_spw_edge_flag = get_chan_spws_map(vis,
                                                      compute_edge_for_flagging=True)
         flagdata(vis=vis, mode='manual', spw=chan_spw_edge_flag,
-                reason='edge_channels', flagbackup=False, action='apply',
-                name='edge_channels')
+                 reason='edge_channels', flagbackup=False, action='apply',
+                 name='edge_channels')
 
     # if do_flag_pointing_scans == True:
     try:
-        logging.info('++==>> Flagging pointing scans')
+        logging.info('  ++==>> Flagging pointing scans')
         flagdata(vis=vis, mode='manual', intent='*POINTING*',
-                reason='pointing', flagbackup=False, action='apply',
-                name='pointing')
+                 reason='pointing', flagbackup=False, action='apply',
+                 name='pointing')
     except:
         logging.warning('--==>> No pointing scans found. Going to skip.')
 
     try:
-        logging.info('++==>> Flagging UNSPECIFIED scans')
+        logging.info('  ++==>> Flagging UNSPECIFIED scans')
         flagdata(vis=vis, mode='manual', intent='*UNSPECIFIED#UNSPECIFIED*',
-                reason='UNSPECIFIED', flagbackup=False, action='apply',
-                name='UNSPECIFIED')
+                 reason='UNSPECIFIED', flagbackup=False, action='apply',
+                 name='UNSPECIFIED')
     except:
         logging.warning('--==>> No UNSPECIFIED scans found. Going to skip.')
 
@@ -412,11 +419,9 @@ def pre_flagging(vis):
     #     summary_after_tfcrop = flagdata(vis=vis, mode='summary')
     #     report_flag(summary_after_tfcrop, 'field')
     #     report_flag(summary_after_tfcrop, 'scan')
-        # report_flag(summary_after_tfcrop,'antenna')
-        # report_flag(summary_after_tfcrop,'spw')
+    # report_flag(summary_after_tfcrop,'antenna')
+    # report_flag(summary_after_tfcrop,'spw')
     # summary_7 = flagdata(vis=vis, mode='summary',field='')
-
-
 
     logging.info('Total data after initial flagging')
     summary_pre_cal = flagdata(vis=vis, mode='summary')
@@ -424,11 +429,11 @@ def pre_flagging(vis):
     # report_flag(summary_pre_cal, 'scan')
     # report_flag(summary_pre_cal,'antenna')
 
-    pre_flagging_endtime = time.time() 
-    pre_flagging_time = pre_flagging_endtime - pre_flagging_starttime 
-    
-    logging.info(f"Initial flagging took {pre_flagging_time/ 60:.2f} minutes")
-    
+    pre_flagging_endtime = time.time()
+    pre_flagging_time = pre_flagging_endtime - pre_flagging_starttime
+
+    logging.info(f"Initial flagging took {pre_flagging_time / 60:.2f} minutes")
+
     """Remember to flag edge channels in each spw
     Also, we need to flag congig/pointing scans intent. 
     If not flagging pointing scans, weird things can happen. 
