@@ -8,7 +8,6 @@ import matplotlib
 import configparser
 import matplotlib.pyplot as plt
 
-
 try:
     import casatasks, casatools, casaplotms
     from casaplotms import plotms
@@ -16,13 +15,14 @@ try:
     from casatasks import flagdata, flagmanager, plotants, plotweather, hanningsmooth
     from casatasks import clearcal, delmod, setjy, fluxscale, tclean, imhead, listobs
     import casalogger
+    import casalogger.__main__
+
     msmd = casatools.msmetadata()
     ms = casatools.ms()
     tb = casatools.table()
 except Exception as e:
     print(f"Error {e} while importing casa utilities."
           f"Are you inside a CASA environment?")
-
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -41,92 +41,99 @@ try:
 except:
     logfile_name = datetime.now().strftime('jvla_pipe_%H:%M:%S_%d:%m:%Y.log')
     filename = os.path.join(log_dir, logfile_name)
-    
+
     logging.basicConfig(filename=filename, level=logging.DEBUG)
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
     logging.getLogger('').addHandler(console)
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
-
-
 exec(open("./data_calibration/helper_functions.py").read())
 exec(open("./data_calibration/flagging.py").read())
 exec(open('./data_calibration/calibrate.py').read())
 
 # loading data
-load_data = config.getboolean('globals','load_data')
-experiment = config.get('globals','experiment_name')
+load_data = config.getboolean('globals', 'load_data')
+experiment = config.get('globals', 'experiment_name')
 working_directory = config.get('globals', 'working_directory')
-asdm_file = config.get('globals','asdm_file')
-do_hanning = config.getboolean('globals','do_hanning')
-singularity_path = config.get('globals','singularity_path')
-use_singularity = config.getboolean('globals','use_singularity')
-ms_info = config.getboolean('globals','ms_info')
-report_verbosity = config.getint('globals','report_verbosity')
+asdm_file = config.get('globals', 'asdm_file')
+do_hanning = config.getboolean('globals', 'do_hanning')
+singularity_path = config.get('globals', 'singularity_path')
+use_singularity = config.getboolean('globals', 'use_singularity')
+ms_info = config.getboolean('globals', 'ms_info')
+report_verbosity = config.getint('globals', 'report_verbosity')
 
 # sources
 
-flux_calibrator = config.get('sources','flux_calibrator')
-bandpass_calibrator = config.get('sources','bandpass_calibrator')
-phase_calibrator = config.get('sources','phase_calibrator')
-target = config.get('sources','target')
+flux_calibrator = config.get('sources', 'flux_calibrator')
+bandpass_calibrator = config.get('sources', 'bandpass_calibrator')
+phase_calibrator = config.get('sources', 'phase_calibrator')
+target = config.get('sources', 'target')
 
 # flagging
-do_flagging = config.getboolean('flagging','do_flagging')
-do_pre_flagging = config.getboolean('flagging','do_pre_flagging')
-do_tfcrop_raw = config.getboolean('flagging','do_tfcrop_raw')
-use_aoflagger = config.getboolean('flagging','use_aoflagger')
-aoflagger_sif = config.get('flagging','aoflagger_sif')
-aoflagger_strategy = config.get('flagging','aoflagger_strategy')
-edge_channel_frac = config.getfloat('flagging','edge_channel_frac')
-edge_channel_flag_frac = config.getfloat('flagging','edge_channel_flag_frac')
-do_flag_edge_channels = config.getboolean('flagging','do_flag_edge_channels')
-casa_flag_mode_strategy = config.get('flagging','casa_flag_mode_strategy')
-do_clip_data = config.getboolean('flagging','do_clip_data')
+do_flagging = config.getboolean('flagging', 'do_flagging')
+do_pre_flagging = config.getboolean('flagging', 'do_pre_flagging')
+do_tfcrop_raw = config.getboolean('flagging', 'do_tfcrop_raw')
+use_aoflagger = config.getboolean('flagging', 'use_aoflagger')
+aoflagger_sif = config.get('flagging', 'aoflagger_sif')
+aoflagger_strategy = config.get('flagging', 'aoflagger_strategy')
+edge_channel_frac = config.getfloat('flagging', 'edge_channel_frac')
+edge_channel_flag_frac = config.getfloat('flagging', 'edge_channel_flag_frac')
+do_flag_edge_channels = config.getboolean('flagging', 'do_flag_edge_channels')
+casa_flag_mode_strategy = config.get('flagging', 'casa_flag_mode_strategy')
+cals_datacolumn_to_flag = config.get('flagging', 'cals_datacolumn_to_flag')
+tfcrop_timecutoff_cals = config.getfloat('flagging', 'tfcrop_timecutoff_cals')
+tfcrop_freqcutoff_cals = config.getfloat('flagging', 'tfcrop_freqcutoff_cals')
+tfcrop_freqcutoff_science = config.getfloat('flagging', 'tfcrop_freqcutoff_science')
+tfcrop_timecutoff_science = config.getfloat('flagging', 'tfcrop_timecutoff_science')
+rflag_timedevscale_cals = config.getfloat('flagging', 'rflag_timedevscale_cals')
+rflag_freqdevscale_cals = config.getfloat('flagging', 'rflag_freqdevscale_cals')
+do_clip_data = config.getboolean('flagging', 'do_clip_data')
 
 # average
-do_average = config.getboolean('average','do_average')
-timebin_avg = config.get('average','timebin_avg')
+do_average = config.getboolean('average', 'do_average')
+timebin_avg = config.get('average', 'timebin_avg')
 
 # calibrate
-do_split = config.getboolean('calibrate','do_split')
-timebin = config.getfloat('calibrate','timebin')
-width = config.getint('calibrate','width')
-solint = config.get('calibrate','solint')
-do_initial_cal = config.getboolean('calibrate','do_initial_cal')
-do_setjy = config.getboolean('calibrate','do_setjy')
-_refant = config.get('calibrate','refant')
-do_refant = config.getboolean('calibrate','do_refant')
+do_split = config.getboolean('calibrate', 'do_split')
+timebin = config.getfloat('calibrate', 'timebin')
+width = config.getint('calibrate', 'width')
+solint = config.get('calibrate', 'solint')
+do_initial_cal = config.getboolean('calibrate', 'do_initial_cal')
+do_setjy = config.getboolean('calibrate', 'do_setjy')
+_refant = config.get('calibrate', 'refant')
+do_refant = config.getboolean('calibrate', 'do_refant')
 if _refant == 'None':
     refant = None
-bp_solint_K = config.get('calibrate','bp_solint_K')
-bp_solint_G_p = config.get('calibrate','bp_solint_G_p')
-bp_solint_G_ap = config.get('calibrate','bp_solint_G_ap')
-bp_solint_BP = config.get('calibrate','bp_solint_BP')
-minsnr = config.getfloat('calibrate','minsnr')
-bp_applymode = config.get('calibrate','bp_applymode')
-ph_ap_applymode = config.get('calibrate','ph_ap_applymode')
-do_bandpass_1st_run = config.getboolean('calibrate','do_bandpass_1st_run')
-do_gain_calibration_1st_run = config.getboolean('calibrate','do_gain_calibration_1st_run')
-do_bandpass_2nd_run = config.getboolean('calibrate','do_bandpass_2nd_run')
-do_gain_calibration_2nd_run = config.getboolean('calibrate','do_gain_calibration_2nd_run')
+bp_solint_K = config.get('calibrate', 'bp_solint_K')
+bp_solint_G_p = config.get('calibrate', 'bp_solint_G_p')
+bp_solint_G_ap = config.get('calibrate', 'bp_solint_G_ap')
+bp_solint_BP = config.get('calibrate', 'bp_solint_BP')
+minsnr = config.getfloat('calibrate', 'minsnr')
+bp_applymode = config.get('calibrate', 'bp_applymode')
+ph_ap_applymode = config.get('calibrate', 'ph_ap_applymode')
+do_bandpass_1st_run = config.getboolean('calibrate', 'do_bandpass_1st_run')
+do_gain_calibration_1st_run = config.getboolean('calibrate', 'do_gain_calibration_1st_run')
+do_bandpass_2nd_run = config.getboolean('calibrate', 'do_bandpass_2nd_run')
+do_gain_calibration_2nd_run = config.getboolean('calibrate', 'do_gain_calibration_2nd_run')
 
-all_solint_short_p = config.get('calibrate','all_solint_short_p')
-all_solint_short_ap = config.get('calibrate','all_solint_short_ap')
-all_solint_long_p = config.get('calibrate','all_solint_long_p')
-all_solint_inf_ap = config.get('calibrate','all_solint_inf_ap')
+all_solint_short_p = config.get('calibrate', 'all_solint_short_p')
+all_solint_short_ap = config.get('calibrate', 'all_solint_short_ap')
+all_solint_long_p = config.get('calibrate', 'all_solint_long_p')
+all_solint_inf_ap = config.get('calibrate', 'all_solint_inf_ap')
 
-do_apply_science_1st_run = config.getboolean('calibrate','do_apply_science_1st_run')
-do_apply_science = config.getboolean('calibrate','do_apply_science')
-do_flag_science = config.getboolean('calibrate','do_flag_science')
-do_run_statwt = config.getboolean('calibrate','do_run_statwt')
+do_apply_science_1st_run = config.getboolean('calibrate', 'do_apply_science_1st_run')
+do_apply_science = config.getboolean('calibrate', 'do_apply_science')
+do_flag_science = config.getboolean('calibrate', 'do_flag_science')
+do_run_statwt = config.getboolean('calibrate', 'do_run_statwt')
+statwt_timebin = config.get('calibrate', 'statwt_timebin')
+statwt_statalg = config.get('calibrate', 'statwt_statalg')
 # defining vis here
 
 vis = f"{working_directory}/{experiment}.ms"
 
 # if do_split == True:
-#     try: 
+#     try:
 #         outputvis = vis.replace('.ms',f'_{timebin}s_{width}_split.ms')
 #         logging.info(f"Splitting {vis} to {outputvis}")
 #         split()
@@ -144,8 +151,7 @@ try:
 except Exception as e:
     logging.error(f"An error occured while creating the working directory: {e}")
 
-
-if load_data == True and 'load_data':   # not in steps_performed:
+if load_data == True and 'load_data':  # not in steps_performed:
     try:
         logging.info("Running CASA task importasdm")
         vis_for_cal = import_data()
@@ -153,15 +159,14 @@ if load_data == True and 'load_data':   # not in steps_performed:
         # steps_performed.append('load_data')
     except Exception as e:
         logging.critical(f"Exception {e} occured")
-        
 
 if ms_info == True:
     try:
         logging.info(f"Getting ms information")
-        flux_calibrator,bandpass_calibrator,phase_calibrator,target = getms_info(vis=vis_for_cal)
+        flux_calibrator, bandpass_calibrator, phase_calibrator, target = getms_info(vis=vis_for_cal)
 
         calibrators_all, calibrators_all_arr, all_fields_str, all_fields_arr, target_fields_arr = \
-            (format_fields(flux_calibrator,bandpass_calibrator,phase_calibrator,target))
+            (format_fields(flux_calibrator, bandpass_calibrator, phase_calibrator, target))
     except Exception as e:
         logging.critical(F"Error {e} while executing func getms_info")
 
@@ -172,7 +177,7 @@ if do_flagging == True:
         pre_flagging(vis=vis_for_cal)
         steps_performed.append('pre_flagging')
     if do_tfcrop_raw and 'tfcrop_raw' not in steps_performed:
-        tfcrop_raw(vis=vis_for_cal,field=calibrators_all)
+        tfcrop_raw(vis=vis_for_cal, field=calibrators_all)
         steps_performed.append('tfcrop_raw')
     # manual_flagging()
     if use_aoflagger == True:
@@ -190,7 +195,7 @@ if do_flagging == True:
         logging.info("Flagging using aoflagger not requested")
 
 if do_average == True and 'average' not in steps_performed:
-    vis_for_cal_avg = vis_for_cal.replace('.ms',f'.avg{timebin_avg}.ms')
+    vis_for_cal_avg = vis_for_cal.replace('.ms', f'.avg{timebin_avg}.ms')
     if not os.path.exists(vis_for_cal_avg):
         logging.info(f"Averaging data to {timebin_avg} before calibration.")
         split(vis=vis_for_cal,
@@ -200,7 +205,6 @@ if do_average == True and 'average' not in steps_performed:
     else:
         logging.info(f"Average ms {vis_for_cal_avg} already exists.")
         vis_for_cal = vis_for_cal_avg
-
 
 # if do_initial_cal == True and 'initial_corrections' not in steps_performed:
 if do_initial_cal == True:
@@ -237,12 +241,12 @@ if do_refant and 'select_refant' not in steps_performed:
     except Exception as e:
         logging.critical(f"Exception {e} while computing ref antenna.")
 
-
 if do_bandpass_1st_run == True and 'bandpass_1st' not in steps_performed:
     try:
         logging.info("Running bandpass calibration")
         (gaintables_apply_BP_1, gainfield_bandpass_apply_1, gain_tables_BP_dict_1,
-         gaintables_apply_BP_dict_1,gainfields_apply_BP_dict_1) = bandpass_cal(i=1,overwrite=False)
+         gaintables_apply_BP_dict_1, gainfields_apply_BP_dict_1) = bandpass_cal(i=1,
+                                                                                overwrite=False)
         steps_performed.append('bandpass_1st')
     except Exception as e:
         logging.critical(f"Exception {e} while running bandpass calibration")
@@ -251,22 +255,26 @@ if do_gain_calibration_1st_run == True and 'gain_calibration_1st' not in steps_p
     try:
         logging.info("Running gain calibration")
         (gain_tables_phases_dict_1,
-         gain_tables_ampphase_for_science_1,gain_tables_to_apply_science_1,
+         gain_tables_ampphase_for_science_1, gain_tables_to_apply_science_1,
          flag_FLUX_SCALE_1) = cal_phases_amplitudes(gaintables_apply_BP_1,
                                                     gainfield_bandpass_apply_1,
                                                     i=1)
 
         if casa_flag_mode_strategy == 'tfcrop':
             apply_tfcrop(vis=vis_for_cal, field=calibrators_all,
-                         datacolumn_to_flag='residual',
+                         datacolumn_to_flag=cals_datacolumn_to_flag,
+                         timecutoff=tfcrop_timecutoff_cals,
+                         freqcutoff=tfcrop_freqcutoff_cals,
                          versionname='tfcrop_gains_apply_1')
         if casa_flag_mode_strategy == 'rflag':
-            apply_tfcrop(vis=vis_for_cal, field=calibrators_all,
-                         datacolumn_to_flag='residual',
-                         versionname='rflag_gains_apply_1')
+            run_rflag(vis=vis_for_cal, field=calibrators_all,
+                      datacolumn_to_flag=cals_datacolumn_to_flag,
+                      timedevscale=rflag_timedevscale_cals,
+                      freqdevscale=rflag_freqdevscale_cals,
+                      versionname='rflag_gains_apply_1')
 
         if do_clip_data:
-            clip_data(vis=vis_for_cal,field=calibrators_all,clipminmax=[0,20],
+            clip_data(vis=vis_for_cal, field=calibrators_all, clipminmax=[0, 20],
                       datacolumn='corrected')
         # run_rflag(vis=vis_for_cal,i=1,field=calibrators_all)
 
@@ -282,14 +290,14 @@ if do_gain_calibration_1st_run == True and 'gain_calibration_1st' not in steps_p
 if do_apply_science_1st_run and 'apply_science_1st_run' not in steps_performed:
     try:
         apply_cal_to_science(vis=vis_for_cal,
-                             gain_tables_to_apply_science_final = gain_tables_to_apply_science_1,
-                             gainfield_bandpass_apply_final = gainfield_bandpass_apply_1,
-                             gain_tables_ampphase_for_science_final = gain_tables_ampphase_for_science_1)
+                             gain_tables_to_apply_science_final=gain_tables_to_apply_science_1,
+                             gainfield_bandpass_apply_final=gainfield_bandpass_apply_1,
+                             gain_tables_ampphase_for_science_final=gain_tables_ampphase_for_science_1)
         if do_clip_data:
             # do_flag_science
             clip_data(vis=vis_for_cal, field=target,
                       datacolumn='corrected')
-        split_fields(vis_for_cal,iter='_1')
+        split_fields(vis_for_cal, iter='_1')
         steps_performed.append('apply_science_1st_run')
     except Exception as e:
         logging.critical(f"Exception {e} while applying calibration to science.")
@@ -298,21 +306,31 @@ if do_bandpass_2nd_run == True and 'bandpass_2nd' not in steps_performed:
     try:
         logging.info("Running bandpass calibration")
         (gaintables_apply_BP_2, gainfield_bandpass_apply_2, gain_tables_BP_dict_2,
-         gaintables_apply_BP_dict_2,gainfields_apply_BP_dict_2) = bandpass_cal(i=2)
+         gaintables_apply_BP_dict_2, gainfields_apply_BP_dict_2) = bandpass_cal(i=2)
         steps_performed.append('bandpass_2nd')
     except Exception as e:
         logging.critical(f"Exception {e} while running bandpass calibration")
-
 
 if do_gain_calibration_2nd_run == True and 'gain_calibration_2nd' not in steps_performed:
     try:
         logging.info("Running gain calibration")
         (gain_tables_phases_dict_2,
-         gain_tables_ampphase_for_science_2,gain_tables_to_apply_science_2,
+         gain_tables_ampphase_for_science_2, gain_tables_to_apply_science_2,
          flag_FLUX_SCALE_2) = cal_phases_amplitudes(gaintables_apply_BP_2,
                                                     gainfield_bandpass_apply_2,
                                                     i=2)
-        # run_rflag(vis=vis_for_cal,i=2,field=calibrators_all)
+        if casa_flag_mode_strategy == 'tfcrop':
+            apply_tfcrop(vis=vis_for_cal, field=calibrators_all,
+                         datacolumn_to_flag=cals_datacolumn_to_flag,
+                         timecutoff=tfcrop_timecutoff_cals,
+                         freqcutoff=tfcrop_freqcutoff_cals,
+                         versionname='tfcrop_gains_apply_2')
+        if casa_flag_mode_strategy == 'rflag':
+            run_rflag(vis=vis_for_cal, field=calibrators_all,
+                      datacolumn_to_flag=cals_datacolumn_to_flag,
+                      timedevscale=rflag_timedevscale_cals,
+                      freqdevscale=rflag_freqdevscale_cals,
+                      versionname='rflag_gains_apply_2')
 
         # make_plots_stages(vis=vis_for_cal,
         #                   stage='after',
@@ -326,23 +344,27 @@ if do_gain_calibration_2nd_run == True and 'gain_calibration_2nd' not in steps_p
 if do_apply_science and 'apply_science' not in steps_performed:
     try:
         apply_cal_to_science(vis=vis_for_cal,
-                             gain_tables_to_apply_science_final = gain_tables_to_apply_science_2,
-                             gainfield_bandpass_apply_final = gainfield_bandpass_apply_2,
-                             gain_tables_ampphase_for_science_final = gain_tables_ampphase_for_science_2)
+                             gain_tables_to_apply_science_final=gain_tables_to_apply_science_2,
+                             gainfield_bandpass_apply_final=gainfield_bandpass_apply_2,
+                             gain_tables_ampphase_for_science_final=gain_tables_ampphase_for_science_2)
         steps_performed.append('apply_science')
     except Exception as e:
         logging.critical(f"Exception {e} while applying calibration to science.")
 
-
 if do_run_statwt and 'run_statwt' not in steps_performed:
+    logging.info(f" ++==> Running statwt on calibrated data.")
+    logging.info(f"     - timebin: {statwt_timebin}.")
+    logging.info(f"     - statalg: {statwt_statalg}.")
     statwt(vis=vis_for_cal, preview=False,
            datacolumn='corrected',
-           timebin='12s', statalg='chauvenet')
+           timebin=statwt_timebin, statalg=statwt_statalg)
     steps_performed.append('run_statwt')
 
 if do_flag_science and 'flag_science' not in steps_performed:
     apply_tfcrop(vis=vis_for_cal,
                  field=target,
+                 timecutoff=tfcrop_timecutoff_science,
+                 freqcutoff=tfcrop_freqcutoff_science,
                  datacolumn_to_flag='corrected')
 
     make_plots_stages(vis=vis_for_cal,
@@ -358,9 +380,9 @@ if do_flag_science and 'flag_science' not in steps_performed:
     #                   kind='final_science_rflag',
     #                   FIELDS=all_fields_str.split(','))
 
-    logging.critical('     => Reporting data flagged final.')
+    logging.info(' ++==> Reporting data flagged final.')
     summary_final = flagdata(vis=vis_for_cal,
-                                 mode='summary', field=target)
+                             mode='summary', field=target)
     report_flag(summary_final, 'field')
 
     steps_performed.append('flag_science')
