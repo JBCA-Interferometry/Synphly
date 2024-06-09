@@ -88,6 +88,9 @@ tfcrop_freqcutoff_science = config.getfloat('flagging', 'tfcrop_freqcutoff_scien
 tfcrop_timecutoff_science = config.getfloat('flagging', 'tfcrop_timecutoff_science')
 rflag_timedevscale_cals = config.getfloat('flagging', 'rflag_timedevscale_cals')
 rflag_freqdevscale_cals = config.getfloat('flagging', 'rflag_freqdevscale_cals')
+rflag_timedevscale_science = config.getfloat('flagging', 'rflag_timedevscale_science')
+rflag_freqdevscale_science = config.getfloat('flagging', 'rflag_freqdevscale_science')
+
 do_clip_data = config.getboolean('flagging', 'do_clip_data')
 
 # average
@@ -260,6 +263,11 @@ if do_gain_calibration_1st_run == True and 'gain_calibration_1st' not in steps_p
                                                     gainfield_bandpass_apply_1,
                                                     i=1)
 
+        # make_plots_stages(vis=vis_for_cal,
+        #                   stage='after',
+        #                   kind='before_apply_calibration_and_flag_iter_1',
+        #                   FIELDS=calibrators_all_arr)
+
         if casa_flag_mode_strategy == 'tfcrop':
             apply_tfcrop(vis=vis_for_cal, field=calibrators_all,
                          datacolumn_to_flag=cals_datacolumn_to_flag,
@@ -319,6 +327,12 @@ if do_gain_calibration_2nd_run == True and 'gain_calibration_2nd' not in steps_p
          flag_FLUX_SCALE_2) = cal_phases_amplitudes(gaintables_apply_BP_2,
                                                     gainfield_bandpass_apply_2,
                                                     i=2)
+
+        # make_plots_stages(vis=vis_for_cal,
+        #                   stage='after',
+        #                   kind='before_apply_calibration_and_flag_iter_1',
+        #                   FIELDS=calibrators_all_arr)
+
         if casa_flag_mode_strategy == 'tfcrop':
             apply_tfcrop(vis=vis_for_cal, field=calibrators_all,
                          datacolumn_to_flag=cals_datacolumn_to_flag,
@@ -332,10 +346,10 @@ if do_gain_calibration_2nd_run == True and 'gain_calibration_2nd' not in steps_p
                       freqdevscale=rflag_freqdevscale_cals,
                       versionname='rflag_gains_apply_2')
 
-        # make_plots_stages(vis=vis_for_cal,
-        #                   stage='after',
-        #                   kind='after_apply_calibration_and_flag_iter_2',
-        #                   FIELDS=calibrators_all_arr)
+        make_plots_stages(vis=vis_for_cal,
+                          stage='after',
+                          kind='after_apply_calibration_and_flag_iter_2',
+                          FIELDS=calibrators_all_arr)
 
         steps_performed.append('gain_calibration_2nd')
     except Exception as e:
@@ -361,24 +375,29 @@ if do_run_statwt and 'run_statwt' not in steps_performed:
     steps_performed.append('run_statwt')
 
 if do_flag_science and 'flag_science' not in steps_performed:
-    apply_tfcrop(vis=vis_for_cal,
-                 field=target,
-                 timecutoff=tfcrop_timecutoff_science,
-                 freqcutoff=tfcrop_freqcutoff_science,
-                 datacolumn_to_flag='corrected')
 
     make_plots_stages(vis=vis_for_cal,
                       stage='after',
-                      kind='final_science_flag',
-                      FIELDS=all_fields_str.split(','))
+                      kind='final_science_before_flag',
+                      FIELDS=target.split(','))
 
-    # run_rflag(vis=vis_for_cal,field=all_fields_str,timedevscale=2.5,freqdevscale=2.5,
-    #           datacolumn_to_flag='corrected',versionname='final_science_rflag')
+    if casa_flag_mode_strategy == 'tfcrop':
+        apply_tfcrop(vis=vis_for_cal, field=target,
+                     datacolumn_to_flag=cals_datacolumn_to_flag,
+                     timecutoff=tfcrop_timecutoff_science,
+                     freqcutoff=tfcrop_freqcutoff_science,
+                     versionname='tfcrop_science')
+    if casa_flag_mode_strategy == 'rflag':
+        run_rflag(vis=vis_for_cal, field=calibrators_all,
+                  datacolumn_to_flag=cals_datacolumn_to_flag,
+                  timedevscale=rflag_timedevscale_science,
+                  freqdevscale=rflag_timedevscale_science,
+                  versionname='rflag_science')
 
-    # make_plots_stages(vis=vis_for_cal,
-    #                   stage='after',
-    #                   kind='final_science_rflag',
-    #                   FIELDS=all_fields_str.split(','))
+    make_plots_stages(vis=vis_for_cal,
+                      stage='after',
+                      kind='final_science_after_flag',
+                      FIELDS=target.split(','))
 
     logging.info(' ++==> Reporting data flagged final.')
     summary_final = flagdata(vis=vis_for_cal,

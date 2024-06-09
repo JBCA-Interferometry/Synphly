@@ -175,7 +175,7 @@ def flux_scale_setjy(vis, flux_density=None, model_image=None, spix=None):
         model = "3C286"
     if ('3C48' in flux_calibrator) or ('0137+331' in flux_calibrator):
         model = "3C48"
-    if ('3C147' in flux_calibrator) or ('0542+498' in flux_calibrator):
+    if ('3C147' in flux_calibrator) or ('0542+498' in flux_calibrator) or ('0542+4951' in flux_calibrator):
         model = "3C147"
     if ('3C138' in flux_calibrator) or ('0521+166' in flux_calibrator):
         model = "3C138"

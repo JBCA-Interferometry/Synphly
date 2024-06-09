@@ -107,15 +107,17 @@ def tfcrop_raw(vis, field):
 
     flagdata(vis=vis, mode='tfcrop', field=field, display='', spw='',
              datacolumn='data', ntime='scan', combinescans=False,
-             extendflags=False, flagnearfreq=False, flagneartime=False,
-             growaround=False,
-             timecutoff=3.0, freqcutoff=3.0, maxnpieces=5, winsize=5,
+             extendflags=False,
+             freqfit='poly',maxnpieces=7,
+             timefit = 'line',usewindowstats='sum',
+             timecutoff=3.5, freqcutoff=3.5, winsize=5,
              action='apply', flagbackup=False, savepars=True
              )
 
     flagdata(vis=vis, mode='extend', field=field, spw='', display='report',
+             growaround=True, flagnearfreq=False, flagneartime=False,
              action='apply', datacolumn='data', combinescans=False, flagbackup=False,
-             growtime=75.0, growfreq=75.0, extendpols=True)
+             growtime=50.0, growfreq=50.0, extendpols=True)
 
     summary_after_tfcrop = flagdata(vis=vis, mode='summary')
     report_flag(summary_after_tfcrop, 'field')
@@ -159,15 +161,15 @@ def run_rflag(vis, field, datacolumn_to_flag='corrected',
                  datacolumn=datacolumn_to_flag, ntime='', combinescans=False,
                  extendflags=False, winsize=3, maxnpieces=7,
                  timedevscale=timedevscale, freqdevscale=freqdevscale,
-                 flagnearfreq=False, flagneartime=False, growaround=True,
+                 flagnearfreq=False, flagneartime=False, growaround=False,
                  action='apply', flagbackup=False, savepars=True
                  )
 
         flagdata(vis=vis, field=field, spw='',
                  datacolumn=datacolumn_to_flag,
                  mode='extend', action='apply', display='report',
-                 flagbackup=False, growtime=75.0,
-                 growfreq=75.0, extendpols=False)
+                 flagbackup=False, growtime=50.0,
+                 growfreq=50.0, extendpols=True)
     except Exception as e:
         logging.error(f"Exception {e} occured while running flagdata")
 
@@ -321,8 +323,11 @@ def pre_flagging(vis):
 
     try:
         """
-        To do: Get the scan length and set the quack interval to 5% of the scan length
-        GL
+        To do: 
+        1. Get the scan length and set the quack interval to 5% of the scan length
+                                                                            -- GL
+        2. Get valid scans for the flux calibrator, and flag ~ 20% of its start.
+                                                                            -- GL
         """
         logging.info('  ++==>> Quacking the data')
         flagdata(vis=vis, mode='quack', quackinterval=5.0, quackmode='beg',
