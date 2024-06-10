@@ -388,7 +388,7 @@ if do_flag_science and 'flag_science' not in steps_performed:
                      freqcutoff=tfcrop_freqcutoff_science,
                      versionname='tfcrop_science')
     if casa_flag_mode_strategy == 'rflag':
-        run_rflag(vis=vis_for_cal, field=calibrators_all,
+        run_rflag(vis=vis_for_cal, field=target,
                   datacolumn_to_flag=cals_datacolumn_to_flag,
                   timedevscale=rflag_timedevscale_science,
                   freqdevscale=rflag_timedevscale_science,
