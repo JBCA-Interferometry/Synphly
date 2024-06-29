@@ -77,7 +77,7 @@ def run_aoflagger_nat(vis):
 
 
 def clip_data(vis, field,
-              datacolumn='data', clipminmax=[0, 1]):
+              datacolumn='data', clipminmax=[0, 20]):
     logging.info(f" ++==>> Flagging the data with clip mode...")
     logging.info(f"        Clipping data in the range {clipminmax}")
     logging.info(f" ++==>> Fields to be flagged: {field}")
@@ -106,18 +106,22 @@ def tfcrop_raw(vis, field):
     report_flag(summary_before_tfcrop, 'field')
 
     flagdata(vis=vis, mode='tfcrop', field=field, display='', spw='',
-             datacolumn='data', ntime='scan', combinescans=False,
+             datacolumn='data', ntime=ntime, combinescans=combinescans,
              extendflags=False,
-             freqfit='poly',maxnpieces=7,
-             timefit = 'line',usewindowstats='sum',
-             timecutoff=3.5, freqcutoff=3.5, winsize=5,
+             freqfit='poly',maxnpieces=maxnpieces,
+             timefit = 'line',
+            #  usewindowstats='sum',
+             timecutoff=tfcrop_timecutoff_cals, 
+             freqcutoff=tfcrop_freqcutoff_cals, 
+             winsize=winsize,
              action='apply', flagbackup=False, savepars=True
              )
 
     flagdata(vis=vis, mode='extend', field=field, spw='', display='report',
              growaround=True, flagnearfreq=False, flagneartime=False,
+             ntime=ntime,
              action='apply', datacolumn='data', combinescans=False, flagbackup=False,
-             growtime=50.0, growfreq=50.0, extendpols=True)
+             growtime=80.0, growfreq=80.0, extendpols=True)
 
     summary_after_tfcrop = flagdata(vis=vis, mode='summary')
     report_flag(summary_after_tfcrop, 'field')
@@ -139,7 +143,7 @@ def report_flag(summary, axis):
     pass
 
 def run_rflag(vis, field, datacolumn_to_flag='corrected',
-              timedevscale=3.0, freqdevscale=3.0,
+              timedevscale=4.0, freqdevscale=5.0,
               versionname='applycal_before_rflag'):
     logging.info("Running rflag")
 
@@ -158,18 +162,18 @@ def run_rflag(vis, field, datacolumn_to_flag='corrected',
     try:
         logging.info(f" ++==>> Flagging column {datacolumn_to_flag}")
         flagdata(vis=vis, mode='rflag', field=field, spw='', display='report',
-                 datacolumn=datacolumn_to_flag, ntime='', combinescans=False,
-                 extendflags=False, winsize=3, maxnpieces=7,
+                 datacolumn=datacolumn_to_flag, ntime='scan', combinescans=False,
+                 extendflags=False, winsize=5, maxnpieces=5,
                  timedevscale=timedevscale, freqdevscale=freqdevscale,
                  flagnearfreq=False, flagneartime=False, growaround=False,
                  action='apply', flagbackup=False, savepars=True
                  )
 
         flagdata(vis=vis, field=field, spw='',
-                 datacolumn=datacolumn_to_flag,
+                 datacolumn=datacolumn_to_flag, ntime='scan',
                  mode='extend', action='apply', display='report',
-                 flagbackup=False, growtime=50.0,
-                 growfreq=50.0, extendpols=True)
+                 flagbackup=False, growtime=80.0,
+                 growfreq=80.0, extendpols=True)
     except Exception as e:
         logging.error(f"Exception {e} occured while running flagdata")
 
@@ -208,7 +212,7 @@ def apply_tfcrop(vis, field, datacolumn_to_flag='corrected',
              )
     logging.info('  ++==>> Extending flags from tfcrop...')
     flagdata(vis=vis, field=field, spw='',
-             datacolumn=datacolumn_to_flag,
+             datacolumn=datacolumn_to_flag, ntime='scan',
              mode='extend', action='apply', display='report',
              flagbackup=False, growtime=80.0, growaround=True,
              growfreq=80.0, extendpols=False)
@@ -330,13 +334,28 @@ def pre_flagging(vis):
                                                                             -- GL
         """
         logging.info('  ++==>> Quacking the data')
-        flagdata(vis=vis, mode='quack', quackinterval=5.0, quackmode='beg',
+        ## All fields
+        flagdata(vis=vis, mode='quack', quackinterval=2.0, quackmode='beg',
+                #  field=phase_calibrator,
                  reason='quack', flagbackup=False, action='apply', name='quack')
+        
+        flagdata(vis=vis, mode='quack', quackinterval=2.0, quackmode='endb',
+                 field=phase_calibrator,
+                 reason='quack', flagbackup=False, action='apply', name='quack')
+        
+        ## Increase quack flag for phase calibrators and flux calibrator only.
         flagdata(vis=vis, mode='quack', quackinterval=10.0, quackmode='beg',
+                 field=phase_calibrator,
+                 reason='quack', flagbackup=False, action='apply', name='quack')
+        flagdata(vis=vis, mode='quack', quackinterval=20.0, quackmode='beg',
                  field=flux_calibrator,
                  reason='quack', flagbackup=False, action='apply', name='quack')
-        flagdata(vis=vis, mode='quack', quackinterval=5.0, quackmode='endb',
+        flagdata(vis=vis, mode='quack', quackinterval=10.0, quackmode='endb',
+                 field=phase_calibrator,
                  reason='quack', flagbackup=False, action='apply', name='quack')
+        
+
+        
     except Exception as e:
         logging.error(f"Exception {e} while quacking")
 
@@ -353,13 +372,26 @@ def pre_flagging(vis):
     except Exception as e:
         logging.error(f"Exception {e} encountered while backing up flags")
 
-    if do_flag_edge_channels == True:
-        logging.info('Flagging edge channels')
+    if do_flag_edge_channels_cals == True:
+        logging.info('Flagging edge channels for calibrators.')
         _, _, chan_spw_edge_flag = get_chan_spws_map(vis,
+                                                     edge_channel_flag_frac=edge_channel_flag_frac_cals,
                                                      compute_edge_for_flagging=True)
         flagdata(vis=vis, mode='manual', spw=chan_spw_edge_flag,
+                 field=calibrators_all,
                  reason='edge_channels', flagbackup=False, action='apply',
                  name='edge_channels')
+
+    if do_flag_edge_channels_science == True:
+        logging.info('Flagging edge channels for science sources.')
+        _, _, chan_spw_edge_flag = get_chan_spws_map(vis,
+                                                     edge_channel_flag_frac=edge_channel_flag_frac_science,
+                                                     compute_edge_for_flagging=True)
+        flagdata(vis=vis, mode='manual', spw=chan_spw_edge_flag,
+                 field=target,
+                 reason='edge_channels', flagbackup=False, action='apply',
+                 name='edge_channels')
+
 
     # if do_flag_pointing_scans == True:
     try:

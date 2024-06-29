@@ -404,6 +404,7 @@ def make_plots_stages(vis,stage='after', kind='',
                           title='Time vs Amp, ' + str(FIELD), avgantenna=avgantenna,
                           gridrows=1, gridcols=1, width=2000, height=800, showgui=False,
                           overwrite=True, dpi=1200,
+                          customsymbol=True,symbolsize=1,symbolshape='diamond',
                           highres=True,
                           plotfile=plotfile)
         plotfile = f"{plots_dir}/{stage}/freq_amp/freq_amp_avg_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
@@ -414,6 +415,7 @@ def make_plots_stages(vis,stage='after', kind='',
                           # width=800,height=540,dpi=600,overwrite=True,showgui=False,
                           gridrows=1, gridcols=1, width=2000, height=800, showgui=False,
                           overwrite=True, dpi=1200,
+                          customsymbol=True,symbolsize=1,symbolshape='diamond',
                           highres=True,
                           plotfile=plotfile)
         plotfile = f"{plots_dir}/{stage}/time_phase/time_phase_avg_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
@@ -423,6 +425,7 @@ def make_plots_stages(vis,stage='after', kind='',
                           gridrows=1, gridcols=1, width=2000, height=800, showgui=False,
                           overwrite=True,
                           dpi=1200, highres=True,
+                          customsymbol=True,symbolsize=1,symbolshape='diamond',
                           plotrange=[-1, -1, -180, 180],
                           plotfile=plotfile)
         plotfile = f"{plots_dir}/{stage}/uvwave_amp_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
@@ -431,13 +434,14 @@ def make_plots_stages(vis,stage='after', kind='',
                           xselfscale=True, yselfscale=True,
                           ydatacolumn=ydatacolumn, avgchannel='9999', avgtime='9999',
                           width=2000, height=800, showgui=False, overwrite=True, dpi=1200,
+                          customsymbol=True,symbolsize=1,symbolshape='diamond',
                           highres=True,
                           plotfile=plotfile)
     make_plots_time = time.time() - make_plots_starttime
     logging.info(f"Plotting regarding {kind} for fields {FIELDS} took {make_plots_time / 60:.2f} minutes")
     pass
 
-def split_fields(vis_to_split,iter=''):
+def split_fields(vis_to_split,iter='',width=1):
     """
     Splits the ms into fields
 
@@ -486,44 +490,36 @@ def split_fields(vis_to_split,iter=''):
             os.makedirs(f"{fields_split_dir}/{formated_field}")
         except:
             pass
-        print(f"Splitting field {field_to_split} into "
-                     f"-->> {working_directory}/fields/{formated_field}"
-                     f"/{formated_field}.calibrated{iter}.ms")
         # split(vis=vis_to_split,
         #       outputvis=f'{fields_split_dir}/{formated_field}'
         #                 f'/{formated_field}.calibrated.avg12s.ms',
         #       datacolumn='corrected', field=target, timebin='12s')
         try:
-            if timebin_avg == '':
-                if os.path.exists(f'{fields_split_dir}/{formated_field}/'
-                                  f'{formated_field}.calibrated{iter}.ms'):
-                    print(f"{formated_field}.calibrated{iter}.ms exists. "
-                          f"Will not create a new one.")
-                else:
-                    split(vis=vis_to_split,
-                          outputvis=f'{fields_split_dir}/{formated_field}/'
-                                    f'{formated_field}.calibrated{iter}.ms',
-                          datacolumn='corrected', field=field_to_split)
-
-                if os.path.exists(f'{fields_split_dir}/{formated_field}/'
-                                  f'{formated_field}.calibrated{iter}.avg12s.ms'):
-                    print(f"{formated_field}.calibrated{iter}.ms exists. "
-                          f"Will not create a new one")
-                else:
-                    split(vis=vis_to_split,
-                          outputvis=f'{fields_split_dir}/{formated_field}/'
-                                    f'{formated_field}.calibrated{iter}.avg12s.ms',
-                          datacolumn='corrected', field=field_to_split,timebin='12s')
+            if os.path.exists(f'{fields_split_dir}/{formated_field}/'
+                                f'{formated_field}.calibrated{iter}.ms'):
+                print(f"{formated_field}.calibrated{iter}.ms exists. "
+                        f"Will not create a new one.")
             else:
-                if os.path.exists(f'{fields_split_dir}/{formated_field}/'
-                                  f'{formated_field}.calibrated{iter}.avg{timebin_avg}.ms'):
-                    print(f"{formated_field}.calibrated{iter}.avg{timebin_avg}.ms exists. "
-                          f"Will not create a new one")
-                else:
-                    split(vis=vis_to_split,
-                          outputvis=f'{fields_split_dir}/{formated_field}/'
-                                    f'{formated_field}.calibrated{iter}.avg{timebin_avg}.ms',
-                          datacolumn='corrected', field=field_to_split,timebin=timebin_avg)
+                print(f"Splitting field {field_to_split} into "
+                            f"-->> {working_directory}/fields/{formated_field}"
+                            f"/{formated_field}.calibrated{iter}.ms")
+                split(vis=vis_to_split,
+                        outputvis=f'{fields_split_dir}/{formated_field}/'
+                                f'{formated_field}.calibrated{iter}.ms',
+                        datacolumn='corrected', field=field_to_split)
+
+            if os.path.exists(f'{fields_split_dir}/{formated_field}/'
+                                f'{formated_field}.calibrated{iter}.avg{timebin_longer}.ms'):
+                print(f"{formated_field}.calibrated{iter}.avg{timebin_longer}.ms exists. "
+                        f"Will not create a new one")
+            else:
+                print(f"Splitting field {field_to_split} into "
+                            f"-->> {working_directory}/fields/{formated_field}"
+                            f"/{formated_field}.calibrated{iter}.avg{timebin_longer}.ms")
+                split(vis=vis_to_split,
+                        outputvis=f'{fields_split_dir}/{formated_field}/'
+                                f'{formated_field}.calibrated{iter}.avg{timebin_longer}.ms',
+                        datacolumn='corrected', field=field_to_split,timebin=timebin_longer)
         except Exception as e:
             print(e)
             pass

@@ -69,6 +69,8 @@ flux_calibrator = config.get('sources', 'flux_calibrator')
 bandpass_calibrator = config.get('sources', 'bandpass_calibrator')
 phase_calibrator = config.get('sources', 'phase_calibrator')
 target = config.get('sources', 'target')
+transfer = config.get('sources', 'transfer')
+reference = config.get('sources', 'reference')
 
 # flagging
 do_flagging = config.getboolean('flagging', 'do_flagging')
@@ -78,10 +80,16 @@ use_aoflagger = config.getboolean('flagging', 'use_aoflagger')
 aoflagger_sif = config.get('flagging', 'aoflagger_sif')
 aoflagger_strategy = config.get('flagging', 'aoflagger_strategy')
 edge_channel_frac = config.getfloat('flagging', 'edge_channel_frac')
-edge_channel_flag_frac = config.getfloat('flagging', 'edge_channel_flag_frac')
-do_flag_edge_channels = config.getboolean('flagging', 'do_flag_edge_channels')
+# edge_channel_flag_frac = config.getfloat('flagging', 'edge_channel_flag_frac')
+do_flag_edge_channels_cals = config.getboolean('flagging', 'do_flag_edge_channels_cals')
+do_flag_edge_channels_science = config.getboolean('flagging', 'do_flag_edge_channels_science')
+edge_channel_flag_frac_cals = config.getfloat('flagging', 'edge_channel_flag_frac_cals')
+edge_channel_flag_frac_science = config.getfloat('flagging', 'edge_channel_flag_frac_science')
+
 casa_flag_mode_strategy = config.get('flagging', 'casa_flag_mode_strategy')
 cals_datacolumn_to_flag = config.get('flagging', 'cals_datacolumn_to_flag')
+ntime = config.get('flagging', 'ntime')
+combinescans = config.getboolean('flagging', 'combinescans')
 tfcrop_timecutoff_cals = config.getfloat('flagging', 'tfcrop_timecutoff_cals')
 tfcrop_freqcutoff_cals = config.getfloat('flagging', 'tfcrop_freqcutoff_cals')
 tfcrop_freqcutoff_science = config.getfloat('flagging', 'tfcrop_freqcutoff_science')
@@ -90,6 +98,8 @@ rflag_timedevscale_cals = config.getfloat('flagging', 'rflag_timedevscale_cals')
 rflag_freqdevscale_cals = config.getfloat('flagging', 'rflag_freqdevscale_cals')
 rflag_timedevscale_science = config.getfloat('flagging', 'rflag_timedevscale_science')
 rflag_freqdevscale_science = config.getfloat('flagging', 'rflag_freqdevscale_science')
+maxnpieces = config.getint('flagging', 'maxnpieces')
+winsize = config.getint('flagging', 'winsize')
 
 do_clip_data = config.getboolean('flagging', 'do_clip_data')
 
@@ -99,11 +109,13 @@ timebin_avg = config.get('average', 'timebin_avg')
 
 # calibrate
 do_split = config.getboolean('calibrate', 'do_split')
-timebin = config.getfloat('calibrate', 'timebin')
+timebin = config.get('calibrate', 'timebin')
+timebin_longer = config.get('calibrate', 'timebin_longer')
 width = config.getint('calibrate', 'width')
 solint = config.get('calibrate', 'solint')
 do_initial_cal = config.getboolean('calibrate', 'do_initial_cal')
 do_setjy = config.getboolean('calibrate', 'do_setjy')
+band = config.get('calibrate', 'band')
 _refant = config.get('calibrate', 'refant')
 do_refant = config.getboolean('calibrate', 'do_refant')
 if _refant == 'None':
@@ -128,6 +140,7 @@ all_solint_inf_ap = config.get('calibrate', 'all_solint_inf_ap')
 do_apply_science_1st_run = config.getboolean('calibrate', 'do_apply_science_1st_run')
 do_apply_science = config.getboolean('calibrate', 'do_apply_science')
 do_flag_science = config.getboolean('calibrate', 'do_flag_science')
+calwt = config.getboolean('calibrate', 'calwt')
 do_run_statwt = config.getboolean('calibrate', 'do_run_statwt')
 statwt_timebin = config.get('calibrate', 'statwt_timebin')
 statwt_statalg = config.get('calibrate', 'statwt_statalg')
@@ -220,6 +233,7 @@ if do_initial_cal == True:
 
 if do_setjy == True and 'flux_scale_setjy' not in steps_performed:
     flux_density_data, spws, fluxes = flux_scale_setjy(vis=vis_for_cal,
+                                                       band=band,
                                                        flux_density='',
                                                        model_image='')
     # flux_density_data, spws, fluxes = flux_scale_setjy(vis=vis_for_cal,
@@ -261,6 +275,8 @@ if do_gain_calibration_1st_run == True and 'gain_calibration_1st' not in steps_p
          gain_tables_ampphase_for_science_1, gain_tables_to_apply_science_1,
          flag_FLUX_SCALE_1) = cal_phases_amplitudes(gaintables_apply_BP_1,
                                                     gainfield_bandpass_apply_1,
+                                                    transfer=transfer,
+                                                    reference=reference,
                                                     i=1)
 
         # make_plots_stages(vis=vis_for_cal,
@@ -301,10 +317,33 @@ if do_apply_science_1st_run and 'apply_science_1st_run' not in steps_performed:
                              gain_tables_to_apply_science_final=gain_tables_to_apply_science_1,
                              gainfield_bandpass_apply_final=gainfield_bandpass_apply_1,
                              gain_tables_ampphase_for_science_final=gain_tables_ampphase_for_science_1)
-        if do_clip_data:
-            # do_flag_science
-            clip_data(vis=vis_for_cal, field=target,
-                      datacolumn='corrected')
+        
+        make_plots_stages(vis=vis_for_cal,
+                        stage='after',
+                        kind='after_apply_cal_1',
+                        FIELDS=target.split(','))
+        
+        # if do_clip_data:
+        #     # do_flag_science
+        #     clip_data(vis=vis_for_cal, field=target,
+        #               datacolumn='corrected')
+        # if casa_flag_mode_strategy == 'tfcrop':
+        #     apply_tfcrop(vis=vis_for_cal, field=target,
+        #                 datacolumn_to_flag=cals_datacolumn_to_flag,
+        #                 timecutoff=tfcrop_timecutoff_science,
+        #                 freqcutoff=tfcrop_freqcutoff_science,
+        #                 versionname='tfcrop_science_1')
+        # if casa_flag_mode_strategy == 'rflag':
+        #     run_rflag(vis=vis_for_cal, field=target,
+        #             datacolumn_to_flag=cals_datacolumn_to_flag,
+        #             timedevscale=rflag_timedevscale_science,
+        #             freqdevscale=rflag_timedevscale_science,
+        #             versionname='rflag_science_1')
+        # make_plots_stages(vis=vis_for_cal,
+        #                 stage='after',
+        #                 kind='science_after_flag_1',
+        #                 FIELDS=target.split(','))
+    
         split_fields(vis_for_cal, iter='_1')
         steps_performed.append('apply_science_1st_run')
     except Exception as e:
@@ -326,6 +365,8 @@ if do_gain_calibration_2nd_run == True and 'gain_calibration_2nd' not in steps_p
          gain_tables_ampphase_for_science_2, gain_tables_to_apply_science_2,
          flag_FLUX_SCALE_2) = cal_phases_amplitudes(gaintables_apply_BP_2,
                                                     gainfield_bandpass_apply_2,
+                                                    transfer=transfer,
+                                                    reference=reference,
                                                     i=2)
 
         # make_plots_stages(vis=vis_for_cal,
@@ -361,6 +402,12 @@ if do_apply_science and 'apply_science' not in steps_performed:
                              gain_tables_to_apply_science_final=gain_tables_to_apply_science_2,
                              gainfield_bandpass_apply_final=gainfield_bandpass_apply_2,
                              gain_tables_ampphase_for_science_final=gain_tables_ampphase_for_science_2)
+    
+        make_plots_stages(vis=vis_for_cal,
+                    stage='after',
+                    kind='after_apply_cal_2',
+                    FIELDS=target.split(','))
+        
         steps_performed.append('apply_science')
     except Exception as e:
         logging.critical(f"Exception {e} while applying calibration to science.")
@@ -376,10 +423,10 @@ if do_run_statwt and 'run_statwt' not in steps_performed:
 
 if do_flag_science and 'flag_science' not in steps_performed:
 
-    make_plots_stages(vis=vis_for_cal,
-                      stage='after',
-                      kind='final_science_before_flag',
-                      FIELDS=target.split(','))
+    # make_plots_stages(vis=vis_for_cal,
+    #                   stage='after',
+    #                   kind='final_science_before_flag',
+    #                   FIELDS=target.split(','))
 
     if casa_flag_mode_strategy == 'tfcrop':
         apply_tfcrop(vis=vis_for_cal, field=target,

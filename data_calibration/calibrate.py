@@ -116,7 +116,8 @@ def initial_corrections(vis):
     return (init_tables, init_tables_dict)
 
 
-def flux_scale_setjy(vis, flux_density=None, model_image=None, spix=None):
+def flux_scale_setjy(vis, flux_density=None, model_image=None, spix=None,
+                     band=''):
     """
     Sets the flux scale
     """
@@ -163,11 +164,11 @@ def flux_scale_setjy(vis, flux_density=None, model_image=None, spix=None):
 
     for nch in range(nspw):
         chan_freqs_all[nch] = msmd.chanfreqs(nch)
-        spws_freq[nch] = np.mean(chan_freqs_all[nch])
+        spws_freq[nch] = np.nanmean(chan_freqs_all[nch])
 
     msmd.done()
 
-    mean_freq = np.mean(spws_freq) * 1e-9
+    mean_freq = np.nanmean(spws_freq) * 1e-9
     """
     To do: add all cross-identifications for each flux calibrator.
     """
@@ -192,12 +193,16 @@ def flux_scale_setjy(vis, flux_density=None, model_image=None, spix=None):
     }
 
     # model = ''
-
-    for range_, band in freq_ranges.items():
-        if mean_freq >= range_[0] and mean_freq <= range_[1]:
-            logging.info(f"Observations done in band: {band}")
-            logging.info(f"Will use model {model}_{band}.im for absolute flux calibration")
-            model = model + f'_{band}.im'
+    if band == '':
+        for range_, band in freq_ranges.items():
+            if mean_freq >= range_[0] and mean_freq <= range_[1]:
+                logging.info(f"Observations done in band: {band}")
+                logging.info(f"Will use model {model}_{band}.im for absolute flux calibration")
+                model = model + f'_{band}.im'
+    else:
+        logging.info(f"Observations done in band: {band}")
+        logging.info(f"Will use model {model}_{band}.im for absolute flux calibration")
+        model = model + f'_{band}.im'
 
     if model not in available_models:
         logging.warning(f"Model {model} not available for band {band}.")
@@ -209,61 +214,59 @@ def flux_scale_setjy(vis, flux_density=None, model_image=None, spix=None):
     spws = None
     fluxes = None
 
-    try:
-        if flux_density == '':
-            logging.info(f"Performing absolute flux calibration using {model}")
+    # try:
+    if flux_density == '':
+        logging.info(f"Performing absolute flux calibration using {model}")
+        flux_density_data = setjy(vis=vis, field=flux_calibrator,
+                                    spw='', model=model, scalebychan=True,
+                                    standard='Perley-Butler 2017', listmodels=False,
+                                    usescratch=True)
+    else:
+        """
+        This should be properly implemented.
+        Occasions that this can occur:
+            - When the flux density must be explicitly set as there is no model available.
+            - Similarly, when it is required to input a model image for the particular flux
+            calibrator.
+        """
+        if model_image != '':
+            logging.warning(f"Using provided model image {model_image} for flux calibrator"
+                            f" {flux_calibrator} at {band} band.")
             flux_density_data = setjy(vis=vis, field=flux_calibrator,
-                                      spw='', model=model, scalebychan=True,
-                                      standard='Perley-Butler 2017', listmodels=False,
-                                      usescratch=True)
-
-            plots_dir = os.path.join(working_directory).rstrip('/') + '/' + 'plots'
-            spws = []
-            fluxes = []
-            # for key in list(flux_density_data['0'].keys())[:-1]:
-            for spw_id in range(nspw):
-                spws.append(spw_id)
-                fluxes.append(flux_density_data['0'][str(spw_id)]['fluxd'][0])
-            spws = np.asarray(spws)
-            fluxes = np.asarray(fluxes)
-
-            try:
-                logging.info(f"Plotting the fluxes against frequency.")
-                plt.figure(figsize=(8, 5))
-                plt.plot(spws_freq * 1e-9, fluxes, 'o', color='black')
-                plt.xlabel('Frequency [GHz]')
-                plt.ylabel(f"'Flux Density {flux_calibrator} [Jy]")
-                plt.grid()
-                plt.title('Flux density from setjy model')
-                flux_plot = os.path.join(plots_dir, flux_calibrator + '_flux_density_model.pdf')
-                plt.savefig(flux_plot, dpi=600)
-                plt.clf()
-                plt.close()
-            except Exception as e:
-                logging.warning(f"Flux plot not generated due to: {e}")
+                                        spw='', model=model_image, scalebychan=True,
+                                        standard='Perley-Butler 2017', listmodels=False,
+                                        usescratch=True)
         else:
-            """
-            This should be properly implemented.
-            Occasions that this can occur:
-                - When the flux density must be explicitly set as there is no model available.
-                - Similarly, when it is required to input a model image for the particular flux
-                calibrator.
-            """
-            if model_image != '':
-                logging.warning(f"Using provided model image {model_image} for flux calibrator"
-                                f" {flux_calibrator} at {band} band.")
-                flux_density_data = setjy(vis=vis, field=flux_calibrator,
-                                          spw='', model=model_image, scalebychan=True,
-                                          standard='Perley-Butler 2017', listmodels=False,
-                                          usescratch=True)
-            else:
-                flux_density_data = setjy(vis=vis_for_cal, field=flux_calibrator,
-                                          spw='', scalebychan=True,
-                                          standard='manual', fluxdensity=flux_density,
-                                          reffreq=f'{mean_freq}GHz', spix=spix,
-                                          listmodels=False, usescratch=True)
+            flux_density_data = setjy(vis=vis_for_cal, field=flux_calibrator,
+                                        spw='', scalebychan=True,
+                                        standard='manual', fluxdensity=flux_density,
+                                        reffreq=f'{mean_freq}GHz', spix=spix,
+                                        listmodels=False, usescratch=True)
+    try:
+        plots_dir = os.path.join(working_directory).rstrip('/') + '/' + 'plots'
+        spws = []
+        fluxes = []
+        # for key in list(flux_density_data['0'].keys())[:-1]:
+        for spw_id in range(nspw):
+            spws.append(spw_id)
+            fluxes.append(flux_density_data['0'][str(spw_id)]['fluxd'][0])
+        spws = np.asarray(spws)
+        fluxes = np.asarray(fluxes)
+
+        logging.info(f"Plotting the fluxes against frequency.")
+        plt.figure(figsize=(8, 5))
+        plt.plot(spws_freq * 1e-9, fluxes, 'o', color='black')
+        plt.xlabel('Frequency [GHz]')
+        plt.ylabel(f"'Flux Density {flux_calibrator} [Jy]")
+        plt.grid()
+        plt.title('Flux density from setjy model')
+        flux_plot = os.path.join(plots_dir, flux_calibrator + '_flux_density_model.pdf')
+        plt.savefig(flux_plot, dpi=600)
+        plt.clf()
+        plt.close()
     except Exception as e:
-        logging.critical(f"Exception {e} while running setjy")
+        
+        logging.warning(f"Flux plot not generated due to: {e}")
 
     return (flux_density_data, spws, fluxes)
 
@@ -346,7 +349,8 @@ def run_gaincal(vis, field, scan,
         logging.critical(f"Exception {e} while generating {caltable}")
 
 
-def get_chan_spws_map(vis, compute_edge_for_flagging=False):
+def get_chan_spws_map(vis,edge_channel_flag_frac = 0.05,
+                      compute_edge_for_flagging=False):
     msmd.open(vis)
     bandwidth = msmd.bandwidths()
     nspw = len(bandwidth)
@@ -670,7 +674,7 @@ def bandpass_cal(i=1, do_plots=False, overwrite=False):
              gaintable=gaintables_apply_BP,
              gainfield=gainfield_bandpass_apply,
              applymode=bp_applymode,
-             calwt=False, flagbackup=False)
+             calwt=calwt, flagbackup=False)
 
     logging.info('     ++==>> Reporting flags after applycal to bandpass.')
     summary_after_applycal_to_bandpass = flagdata(vis=vis_for_cal, mode='summary',
@@ -684,7 +688,10 @@ def bandpass_cal(i=1, do_plots=False, overwrite=False):
             gain_tables_BP_dict, gaintables_apply_BP_dict, gainfields_apply_BP_dict)
 
 
-def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1, overwrite=False):
+def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1, 
+                          transfer='',reference='',
+                          overwrite=False):
+    
     spw_skip_edge, spw_central = get_chan_spws_map(vis=vis_for_cal)
 
     gain_tables_phases_dict = {}
@@ -794,24 +801,48 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1, ov
     """
     We now apply the flux scale on the amplitude gains with the longer solution intervals. 
     """
+    incremental = False
     try:
         fluxtable_short = gain_tables_phases_dict['allcals_ap_short'].replace('.tb','_flux_scale.tb')
         listfluxfile_short = fluxtable_short.replace('.tb', '_fluxinfo.txt')
 
         fluxtable = gain_tables_phases_dict['allcals_ap_inf'].replace('.tb', '_flux_scale.tb')
         listfluxfile = fluxtable.replace('.tb', '_fluxinfo.txt')
-
+        
+        if transfer == '':
+            transfer = calibrators_all
+        else:
+            transfer = transfer
+            
+        if reference == '':
+            reference = flux_calibrator
+        else:
+            reference = reference
+            
         flux_bp_short = fluxscale(vis=vis_for_cal,
                             caltable=gain_tables_phases_dict['allcals_ap_short'],
-                            fluxtable=fluxtable_short, reference=flux_calibrator,
-                            transfer=calibrators_all, incremental=True,
+                            fluxtable=fluxtable_short, reference=reference,
+                            transfer=transfer, incremental=incremental,
                             listfile=listfluxfile_short, fitorder=1)
 
         flux_bp = fluxscale(vis=vis_for_cal,
                             caltable=gain_tables_phases_dict['allcals_ap_inf'],
-                            fluxtable=fluxtable, reference=flux_calibrator,
-                            transfer=calibrators_all, incremental=True,
+                            fluxtable=fluxtable, reference=reference,
+                            transfer=transfer, incremental=incremental,
                             listfile=listfluxfile, fitorder=1)
+        
+        # flux_bp_short_for_model = fluxscale(vis=vis_for_cal,
+        #                     caltable=gain_tables_phases_dict['allcals_ap_short'],
+        #                     fluxtable=fluxtable_short, reference=reference,
+        #                     transfer=transfer, incremental=False,
+        #                     listfile=listfluxfile_short, fitorder=1)
+
+        # flux_bp_for_model = fluxscale(vis=vis_for_cal,
+        #                     caltable=gain_tables_phases_dict['allcals_ap_inf'],
+        #                     fluxtable=fluxtable, reference=reference,
+        #                     transfer=transfer, incremental=False,
+        #                     listfile=listfluxfile, fitorder=1)
+        
         """
         The following lines are commented out as an example of a workaround when fluxscale 
         fails for observations with duplicated fields, where one is completely flagged.
@@ -822,14 +853,16 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1, ov
         # flux_bp_short = fluxscale(vis=vis_for_cal,
         #                           caltable=gain_tables_phases_dict['allcals_ap_short'],
         #                           fluxtable=fluxtable_short,
-        #                           transfer='0,1,3,5,7,9,11,13,15,17,19,21,23,25', reference='0',
+        #                         #   transfer='0,2,5,8,11', reference='0',
+        #                           transfer='4,7', reference='7',
         #                           incremental=True, display=True,
         #                           listfile=listfluxfile_short, fitorder=1)
 
         # flux_bp = fluxscale(vis=vis_for_cal,
         #                     caltable=gain_tables_phases_dict['allcals_ap_inf'],
         #                     fluxtable=fluxtable,
-        #                     transfer='0,1,3,5,7,9,11,13,15,17,19,21,23,25', reference='0',
+        #                     # transfer='0,2,5,8,11', reference='0',
+        #                     transfer='4,7', reference='7',
         #                     incremental=True, display=True,
         #                     listfile=listfluxfile, fitorder=1)
     except:
@@ -837,120 +870,135 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1, ov
         pass
 
     # allcals_ap_inf
+    
+    # if os.path.exists(fluxtable):
+    #     """
+    #     If fluxscale fails (e.g. older observations), the table fluxtable will not be created.
+    #     """
+    #     #
+    gain_tables_phases_dict['allcals_ap_fluxscale'] = fluxtable
+    gain_tables_phases_dict['allcals_ap_fluxscale_short'] = fluxtable_short
 
-    if os.path.exists(fluxtable):
-        """
-        If fluxscale fails (e.g. older observations), the table fluxtable will not be created.
-        """
-        #
-        gain_tables_phases_dict['allcals_ap_fluxscale'] = fluxtable
-        gain_tables_phases_dict['allcals_ap_fluxscale_short'] = fluxtable_short
+    flux_phase_cals_scaled = setjy(vis=vis_for_cal, field=calibrators_all,
+                                    scalebychan=True, standard='fluxscale',
+                                    usescratch=True,
+                                    fluxdict=flux_bp_for_model)
 
-        flux_phase_cals_scaled = setjy(vis=vis_for_cal, field=calibrators_all,
-                                       scalebychan=True, standard='fluxscale',
-                                       fluxdict=flux_bp)
+    calibration_table_plot(table=fluxtable_short,
+                            stage='calibration',
+                            table_type=str(
+                                i) + table_stage_all_ap_short + all_solint_short_ap + '_flux_scale',
+                            kind='', xaxis='time', yaxis='phase', fields='')
+    calibration_table_plot(table=fluxtable_short,
+                            stage='calibration',
+                            table_type=str(
+                                i) + table_stage_all_ap_short + all_solint_short_ap + '_flux_scale',
+                            kind='', xaxis='time', yaxis='amp', fields='')
 
-        calibration_table_plot(table=fluxtable_short,
-                               stage='calibration',
-                               table_type=str(
-                                   i) + table_stage_all_ap_short + all_solint_short_ap + '_flux_scale',
-                               kind='', xaxis='time', yaxis='phase', fields='')
-        calibration_table_plot(table=fluxtable_short,
-                               stage='calibration',
-                               table_type=str(
-                                   i) + table_stage_all_ap_short + all_solint_short_ap + '_flux_scale',
-                               kind='', xaxis='time', yaxis='amp', fields='')
+    calibration_table_plot(table=fluxtable,
+                            stage='calibration',
+                            table_type=str(
+                                i) + table_stage_allcal_ap_inf + all_solint_inf_ap + '_flux_scale',
+                            kind='', xaxis='time', yaxis='phase', fields='')
+    calibration_table_plot(table=fluxtable,
+                            stage='calibration',
+                            table_type=str(
+                                i) + table_stage_allcal_ap_inf + all_solint_inf_ap + '_flux_scale',
+                            kind='', xaxis='time', yaxis='amp', fields='')
 
-        calibration_table_plot(table=fluxtable,
-                               stage='calibration',
-                               table_type=str(
-                                   i) + table_stage_allcal_ap_inf + all_solint_inf_ap + '_flux_scale',
-                               kind='', xaxis='time', yaxis='phase', fields='')
-        calibration_table_plot(table=fluxtable,
-                               stage='calibration',
-                               table_type=str(
-                                   i) + table_stage_allcal_ap_inf + all_solint_inf_ap + '_flux_scale',
-                               kind='', xaxis='time', yaxis='amp', fields='')
+    msmd.open(vis_for_cal)
+    bandwidth = msmd.bandwidths()
+    nspw = len(bandwidth)
 
-        msmd.open(vis_for_cal)
-        bandwidth = msmd.bandwidths()
-        nspw = len(bandwidth)
+    chan_freqs_all = np.empty(nspw, dtype=object)
+    spws_freq = np.zeros(nspw)
 
-        chan_freqs_all = np.empty(nspw, dtype=object)
-        spws_freq = np.zeros(nspw)
+    for nch in range(nspw):
+        chan_freqs_all[nch] = msmd.chanfreqs(nch)
+        spws_freq[nch] = np.nanmean(chan_freqs_all[nch])
 
-        for nch in range(nspw):
-            chan_freqs_all[nch] = msmd.chanfreqs(nch)
-            spws_freq[nch] = np.mean(chan_freqs_all[nch])
+    msmd.done()
 
-        msmd.done()
+    plots_dir = os.path.join(working_directory).rstrip('/') + '/' + 'plots'
+    try:
+        spws_phasecals = {}
+        fluxes_phasecals = {}
+        for kk in range(len(phase_calibrator.split(','))):
+            spws_phasecals[f"{kk}"] = []
+            fluxes_phasecals[f"{kk}"] = []
+            for spw_id in range(nspw):
+                spws_phasecals[f"{kk}"].append(spw_id)
+                fluxes_phasecals[f"{kk}"].append(
+                    flux_phase_cals_scaled[f"{kk + 1}"][str(spw_id)]['fluxd'][0])
 
-        plots_dir = os.path.join(working_directory).rstrip('/') + '/' + 'plots'
-        try:
-            spws_phasecals = {}
-            fluxes_phasecals = {}
-            for kk in range(len(phase_calibrator.split(','))):
-                spws_phasecals[f"{kk}"] = []
-                fluxes_phasecals[f"{kk}"] = []
-                for spw_id in range(nspw):
-                    spws_phasecals[f"{kk}"].append(spw_id)
-                    fluxes_phasecals[f"{kk}"].append(
-                        flux_phase_cals_scaled[f"{kk + 1}"][str(spw_id)]['fluxd'][0])
+        logging.info(f"Plotting the bootstrap fluxes against frequency.")
+        plt.figure(figsize=(8, 5))
+        for kk in range(len(phase_calibrator.split(','))):
+            plt.plot(spws_freq * 1e-9, fluxes_phasecals[f"{kk}"], 'o', color='black',
+                        label=f"{phase_calibrator.split(',')[kk]}")
 
-            logging.info(f"Plotting the bootstrap fluxes against frequency.")
-            plt.figure(figsize=(8, 5))
-            for kk in range(len(phase_calibrator.split(','))):
-                plt.plot(spws_freq * 1e-9, fluxes_phasecals[f"{kk}"], 'o', color='black',
-                         label=f"{phase_calibrator.split(',')[kk]}")
+        plt.xlabel('Frequency [GHz]')
+        plt.ylabel(f"'Flux Density [Jy]")
+        plt.grid()
+        plt.legend()
+        plt.title('Flux Density Bootstrap For Phase Calibrators from Fluxscale')
+        plt.semilogx()
+        plt.semilogy()
+        flux_plot = os.path.join(plots_dir, 'phasecals_flux_density_bootstrap.pdf')
+        plt.savefig(flux_plot, dpi=600, bbox_inches='tight')
+        plt.clf()
+        plt.close()
+    except Exception as e:
+        logging.warning(f"Flux plot not generated due to: {e}")
 
-            plt.xlabel('Frequency [GHz]')
-            plt.ylabel(f"'Flux Density [Jy]")
-            plt.grid()
-            plt.legend()
-            plt.title('Flux Density Bootstrap For Phase Calibrators from Fluxscale')
-            plt.semilogx()
-            plt.semilogy()
-            flux_plot = os.path.join(plots_dir, 'phasecals_flux_density_bootstrap.pdf')
-            plt.savefig(flux_plot, dpi=600, bbox_inches='tight')
-            plt.clf()
-            plt.close()
-        except Exception as e:
-            logging.warning(f"Flux plot not generated due to: {e}")
+    # gaintables_temp_calibrators_amp_fluxscale = gaintables_temp_calibrators_amp_short.copy()
+    gaintables_temp_calibrators_amp_fluxscale = gaintables_temp_calibrators_amp_inf.copy()
+    gaintables_temp_calibrators_amp_fluxscale.append(fluxtable)
 
-        # gaintables_temp_calibrators_amp_fluxscale = gaintables_temp_calibrators_amp_short.copy()
-        gaintables_temp_calibrators_amp_fluxscale = gaintables_temp_calibrators_amp_inf.copy()
-        gaintables_temp_calibrators_amp_fluxscale.append(fluxtable)
-
+    if incremental == True:
         gain_tables_ampphase_for_all_cals = [gain_tables_phases_dict['allcals_p_short'],
-                                             gain_tables_phases_dict['allcals_ap_short'],
-                                             # care with this one
-                                             # gain_tables_phases_dict['allcals_ap_inf'],
-                                             gain_tables_phases_dict['allcals_ap_fluxscale']
-                                             ]
+                                                gain_tables_phases_dict['allcals_ap_short'],
+                                                # care with this one
+                                                # gain_tables_phases_dict['allcals_ap_inf'],
+                                                gain_tables_phases_dict['allcals_ap_fluxscale']
+                                                ]
 
         gain_tables_ampphase_for_science = [gain_tables_phases_dict['allcals_p_inf'],
                                             gain_tables_phases_dict['allcals_ap_inf'],
                                             gain_tables_phases_dict['allcals_ap_fluxscale']
                                             ]
-
-        # gain_tables_ampphase = [gaintables_temp_calibrators_amp[-2],
-        #                         gaintables_temp_calibrators_amp[-1], fluxtable]
-        flag_FLUX_SCALE = False
-
-    else:
-        logging.warning(f"No fluxscale table generated.")
-        gaintables_temp_calibrators_amp_fluxscale = gaintables_temp_calibrators_amp_short.copy()
-        # gaintables_temp_calibrators_amp_fluxscale.append(fluxtable)
+    if incremental == False:
         gain_tables_ampphase_for_all_cals = [gain_tables_phases_dict['allcals_p_short'],
-                                             gain_tables_phases_dict['allcals_ap_inf']
-                                             ]
+                                                # gain_tables_phases_dict['allcals_ap_short'],
+                                                # care with this one
+                                                # gain_tables_phases_dict['allcals_ap_inf'],
+                                                gain_tables_phases_dict['allcals_ap_fluxscale']
+                                                ]
 
         gain_tables_ampphase_for_science = [gain_tables_phases_dict['allcals_p_inf'],
-                                            gain_tables_phases_dict['allcals_ap_inf']
+                                            # gain_tables_phases_dict['allcals_ap_inf'],
+                                            gain_tables_phases_dict['allcals_ap_fluxscale']
                                             ]
 
-        flux_phase_cals_scaled = None
-        flag_FLUX_SCALE = True
+    # gain_tables_ampphase = [gaintables_temp_calibrators_amp[-2],
+    #                         gaintables_temp_calibrators_amp[-1], fluxtable]
+    flag_FLUX_SCALE = False
+
+    
+    # else:
+    #     logging.warning(f"No fluxscale table generated.")
+    #     gaintables_temp_calibrators_amp_fluxscale = gaintables_temp_calibrators_amp_short.copy()
+    #     # gaintables_temp_calibrators_amp_fluxscale.append(fluxtable)
+    #     gain_tables_ampphase_for_all_cals = [gain_tables_phases_dict['allcals_p_short'],
+    #                                          gain_tables_phases_dict['allcals_ap_inf']
+    #                                          ]
+
+    #     gain_tables_ampphase_for_science = [gain_tables_phases_dict['allcals_p_inf'],
+    #                                         gain_tables_phases_dict['allcals_ap_inf']
+    #                                         ]
+
+    #     flux_phase_cals_scaled = None
+    #     flag_FLUX_SCALE = True
 
     logging.info(f"Creating flag-backup before applycal to calibrators iteration {i}")
     flagmanager(vis=vis_for_cal, mode='save', versionname='before_applycal_' + str(i),
@@ -990,7 +1038,7 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1, ov
                  field=calibrator_field,
                  applymode=ph_ap_applymode,
                  gaintable=gain_tables_to_apply_all_cals, flagbackup=False,
-                 gainfield=gainfield_to_apply_all_cals, calwt=False)
+                 gainfield=gainfield_to_apply_all_cals, calwt=calwt)
 
     logging.info(f"Reporting flags after applycal to calibrators iteration {i}")
     summary_after_applycal_to_calibrators = flagdata(vis=vis_for_cal, mode='summary',
@@ -1015,13 +1063,15 @@ def apply_cal_to_science(vis, gain_tables_to_apply_science_final,
     logging.info("Applying calibration to science source(s).")
     # logging.info("Aggregating gaintables  and gainfields.")
 
-    if not os.path.exists(vis + '.flagversions/flags.before_applycal_science/'):
-        logging.info(f"Creating flag-backup before applycal to science sources.")
-        flagmanager(vis=vis, mode='save', versionname='before_applycal_science',
-                    comment='Flags before applycal to science sources.')
-    else:
-        logging.info(f"Flag-backup before applycal to science sources already exists.")
-        flagmanager(vis=vis, mode='restore', versionname='before_applycal_science')
+    # if not os.path.exists(vis + '.flagversions/flags.before_applycal_science/'):
+    logging.info(f" ++==>> Creating flag-backup before applycal to science sources.")
+    flagmanager(vis=vis, mode='save', versionname='before_applycal_science',
+                comment='Flags before applycal to science sources.')
+    # else:
+    #     logging.info(f" --==>> Flag-backup before applycal to science sources already exists.")
+    #     logging.info(f" --==>> Flag-backup before applycal to science sources already exists.")
+    #     flagmanager(vis=vis, mode='restore', 
+    #                 versionname='before_applycal_science')
 
     logging.info("     => Reporting data flagged before applycal.")
     summary_cal_before = flagdata(vis=vis,
@@ -1042,16 +1092,11 @@ def apply_cal_to_science(vis, gain_tables_to_apply_science_final,
                  field=target_fields_arr[n],
                  gaintable=gain_tables_to_apply_science_final,
                  flagbackup=False,
-                 gainfield=gainfields_final, calwt=False)
+                 gainfield=gainfields_final, calwt=calwt)
 
     print('     => Reporting data flagged after applycal.')
     summary_cal_after = flagdata(vis=vis,
                                  mode='summary', field='', datacolumn='data')
     report_flag(summary_cal_after, 'field')
-
-    make_plots_stages(vis=vis,
-                      stage='after',
-                      kind='after_calibration',
-                      FIELDS=target_fields_arr)
-
+    
     pass
