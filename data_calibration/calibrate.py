@@ -882,7 +882,7 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1,
     flux_phase_cals_scaled = setjy(vis=vis_for_cal, field=calibrators_all,
                                     scalebychan=True, standard='fluxscale',
                                     usescratch=True,
-                                    fluxdict=flux_bp_for_model)
+                                    fluxdict=flux_bp)
 
     calibration_table_plot(table=fluxtable_short,
                             stage='calibration',
