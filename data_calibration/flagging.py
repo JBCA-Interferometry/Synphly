@@ -159,6 +159,7 @@ def run_rflag(vis, field, datacolumn_to_flag='corrected',
 
     summary_before_rflag = flagdata(vis=vis, mode='summary')
     report_flag(summary_before_rflag, 'field')
+
     try:
         logging.info(f" ++==>> Flagging column {datacolumn_to_flag}")
         flagdata(vis=vis, mode='rflag', field=field, spw='', display='report',
@@ -183,7 +184,7 @@ def run_rflag(vis, field, datacolumn_to_flag='corrected',
 
 def apply_tfcrop(vis, field, datacolumn_to_flag='corrected',
                  winsize=5, maxnpieces=5,
-                 timecutoff=3.0, freqcutoff=3.0,
+                 timecutoff=4.0, freqcutoff=4.0,
                  versionname='applycal_before_tfcrop'):
     logging.info(f"  ++==>> Applying tfcrop...")
     logging.info(f"  ++==>> Using {datacolumn_to_flag} column for flagging")
@@ -201,6 +202,12 @@ def apply_tfcrop(vis, field, datacolumn_to_flag='corrected',
 
     summary_before_tfcrop = flagdata(vis=vis, mode='summary')
     report_flag(summary_before_tfcrop, 'field')
+    
+    if datacolumn_to_flag == 'residual' or datacolumn_to_flag == 'RESIDUAL':
+        logging.info(f" ++==>> The residual column is selected for flagging. Setting freqfit to line.")
+        freqfit = 'line'
+    else:
+        freqfit = 'poly'
 
     flagdata(vis=vis, mode='tfcrop', field=field, spw='',
              datacolumn=datacolumn_to_flag, ntime='scan', combinescans=False,
@@ -208,6 +215,7 @@ def apply_tfcrop(vis, field, datacolumn_to_flag='corrected',
              flagnearfreq=False,
              flagneartime=False, growaround=True,
              timecutoff=timecutoff, freqcutoff=freqcutoff,
+             freqfit = freqfit,
              action='apply', flagbackup=False, savepars=False,
              )
     logging.info('  ++==>> Extending flags from tfcrop...')
@@ -344,13 +352,13 @@ def pre_flagging(vis):
                  reason='quack', flagbackup=False, action='apply', name='quack')
         
         ## Increase quack flag for phase calibrators and flux calibrator only.
-        flagdata(vis=vis, mode='quack', quackinterval=10.0, quackmode='beg',
+        flagdata(vis=vis, mode='quack', quackinterval=5.0, quackmode='beg',
                  field=phase_calibrator,
                  reason='quack', flagbackup=False, action='apply', name='quack')
-        flagdata(vis=vis, mode='quack', quackinterval=20.0, quackmode='beg',
+        flagdata(vis=vis, mode='quack', quackinterval=10.0, quackmode='beg',
                  field=flux_calibrator,
                  reason='quack', flagbackup=False, action='apply', name='quack')
-        flagdata(vis=vis, mode='quack', quackinterval=10.0, quackmode='endb',
+        flagdata(vis=vis, mode='quack', quackinterval=5.0, quackmode='endb',
                  field=phase_calibrator,
                  reason='quack', flagbackup=False, action='apply', name='quack')
         

@@ -399,12 +399,12 @@ def make_plots_stages(vis,stage='after', kind='',
         # print('Plotting Chan vs Amp: Field')
         plotfile = f"{plots_dir}/{stage}/time_amp/time_amp_avg_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
         plotms(vis=vis, xaxis='time', yaxis='amp', ydatacolumn=ydatacolumn,
-                          avgchannel='9999', coloraxis='spw', field=FIELD,
+                          avgchannel='9999', coloraxis='baseline', field=FIELD,
                           xselfscale=True, yselfscale=True, correlation='RR,LL',
                           title='Time vs Amp, ' + str(FIELD), avgantenna=avgantenna,
                           gridrows=1, gridcols=1, width=2000, height=800, showgui=False,
                           overwrite=True, dpi=1200,
-                          customsymbol=True,symbolsize=1,symbolshape='diamond',
+                          customsymbol=True,symbolsize=3,symbolshape='diamond',
                           highres=True,
                           plotfile=plotfile)
         plotfile = f"{plots_dir}/{stage}/freq_amp/freq_amp_avg_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
@@ -415,28 +415,83 @@ def make_plots_stages(vis,stage='after', kind='',
                           # width=800,height=540,dpi=600,overwrite=True,showgui=False,
                           gridrows=1, gridcols=1, width=2000, height=800, showgui=False,
                           overwrite=True, dpi=1200,
-                          customsymbol=True,symbolsize=1,symbolshape='diamond',
+                          customsymbol=True,symbolsize=3,symbolshape='diamond',
                           highres=True,
                           plotfile=plotfile)
         plotfile = f"{plots_dir}/{stage}/time_phase/time_phase_avg_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
         plotms(vis=vis, xaxis='time', yaxis='phase', ydatacolumn=ydatacolumn, correlation='RR,LL',
-                          avgchannel='9999', coloraxis='spw', field=FIELD,
+                          avgchannel='9999', coloraxis='baseline', field=FIELD,
                           title='Time vs Phase, ' + str(FIELD), avgantenna=avgantenna,
                           gridrows=1, gridcols=1, width=2000, height=800, showgui=False,
                           overwrite=True,
                           dpi=1200, highres=True,
-                          customsymbol=True,symbolsize=1,symbolshape='diamond',
+                          customsymbol=True,symbolsize=3,symbolshape='diamond',
                           plotrange=[-1, -1, -180, 180],
                           plotfile=plotfile)
         plotfile = f"{plots_dir}/{stage}/uvwave_amp_{ydatacolumn}_field_{FIELD}_{kind}.jpg"
         plotms(vis=vis, xaxis='uvwave', yaxis='amp', field=FIELD,
-                          coloraxis='spw', correlation='RR,LL',
+                          coloraxis='baseline', correlation='RR,LL',
                           xselfscale=True, yselfscale=True,
                           ydatacolumn=ydatacolumn, avgchannel='9999', avgtime='9999',
                           width=2000, height=800, showgui=False, overwrite=True, dpi=1200,
-                          customsymbol=True,symbolsize=1,symbolshape='diamond',
+                          customsymbol=True,symbolsize=3,symbolshape='diamond',
                           highres=True,
                           plotfile=plotfile)
+        
+        
+        
+        ydatacolumn2 = 'residual'
+        ydatacolumn3 = 'corrected/model'
+        ydatacolumn4 = 'model'
+        
+        try:
+        
+            plotfile = f"{plots_dir}/{stage}/uvwave_amp_{ydatacolumn2}_field_{FIELD}_{kind}.jpg"
+            plotms(vis=vis, xaxis='uvwave', yaxis='amp', field=FIELD,
+                            coloraxis='baseline', correlation='RR,LL',
+                            xselfscale=True, yselfscale=True,
+                            ydatacolumn=ydatacolumn2, avgchannel='9999', avgtime='9999',
+                            width=2000, height=800, showgui=False, overwrite=True, dpi=1200,
+                            customsymbol=True,symbolsize=3,symbolshape='diamond',
+                            highres=True,
+                            plotfile=plotfile)
+            
+            plotfile = f"{plots_dir}/{stage}/freq_amp/freq_amp_avg_{ydatacolumn2}_field_{FIELD}_{kind}.jpg"
+            plotms(vis=vis, xaxis='freq', yaxis='amp', ydatacolumn=ydatacolumn2,
+                            avgtime='9999', coloraxis='baseline', field=FIELD,
+                            xselfscale=True, yselfscale=True, correlation='RR,LL',
+                            title='Freq vs Amp, ' + str(FIELD), avgantenna=avgantenna,
+                            # width=800,height=540,dpi=600,overwrite=True,showgui=False,
+                            gridrows=1, gridcols=1, width=2000, height=800, showgui=False,
+                            overwrite=True, dpi=1200,
+                            customsymbol=True,symbolsize=3,symbolshape='diamond',
+                            highres=True,
+                            plotfile=plotfile)
+            
+            plotfile = f"{plots_dir}/{stage}/freq_amp/freq_amp_avg_{ydatacolumn4}_field_{FIELD}_{kind}.jpg"
+            plotms(vis=vis, xaxis='freq', yaxis='amp', ydatacolumn=ydatacolumn4,
+                            avgtime='9999', coloraxis='baseline', field=FIELD,
+                            xselfscale=True, yselfscale=True, correlation='RR,LL',
+                            title='Freq vs Amp, ' + str(FIELD), avgantenna=avgantenna,
+                            # width=800,height=540,dpi=600,overwrite=True,showgui=False,
+                            gridrows=1, gridcols=1, width=2000, height=800, showgui=False,
+                            overwrite=True, dpi=1200,
+                            customsymbol=True,symbolsize=3,symbolshape='diamond',
+                            highres=True,
+                            plotfile=plotfile)
+            
+            plotfile = f"{plots_dir}/{stage}/uvwave_amp_corrected_div_model_field_{FIELD}_{kind}.jpg"
+            plotms(vis=vis, xaxis='uvwave', yaxis='amp', field=FIELD,
+                            coloraxis='baseline', correlation='RR,LL',
+                            xselfscale=True, yselfscale=True,
+                            ydatacolumn=ydatacolumn3, avgchannel='9999', avgtime='9999',
+                            width=2000, height=800, showgui=False, overwrite=True, dpi=1200,
+                            customsymbol=True,symbolsize=3,symbolshape='diamond',
+                            highres=True,
+                            plotfile=plotfile)
+        except:
+            pass
+            
     make_plots_time = time.time() - make_plots_starttime
     logging.info(f"Plotting regarding {kind} for fields {FIELDS} took {make_plots_time / 60:.2f} minutes")
     pass
