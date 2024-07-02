@@ -88,6 +88,8 @@ edge_channel_flag_frac_science = config.getfloat('flagging', 'edge_channel_flag_
 
 casa_flag_mode_strategy = config.get('flagging', 'casa_flag_mode_strategy')
 cals_datacolumn_to_flag = config.get('flagging', 'cals_datacolumn_to_flag')
+science_flag_mode_strategy = config.get('flagging', 'science_flag_mode_strategy')
+science_datacolumn_to_flag = config.get('flagging', 'science_datacolumn_to_flag')
 ntime = config.get('flagging', 'ntime')
 combinescans = config.getboolean('flagging', 'combinescans')
 tfcrop_timecutoff_cals = config.getfloat('flagging', 'tfcrop_timecutoff_cals')
@@ -428,15 +430,15 @@ if do_flag_science and 'flag_science' not in steps_performed:
     #                   kind='final_science_before_flag',
     #                   FIELDS=target.split(','))
 
-    if casa_flag_mode_strategy == 'tfcrop':
+    if science_flag_mode_strategy == 'tfcrop':
         apply_tfcrop(vis=vis_for_cal, field=target,
-                     datacolumn_to_flag=cals_datacolumn_to_flag,
+                     datacolumn_to_flag=science_datacolumn_to_flag,
                      timecutoff=tfcrop_timecutoff_science,
                      freqcutoff=tfcrop_freqcutoff_science,
                      versionname='tfcrop_science')
-    if casa_flag_mode_strategy == 'rflag':
+    if science_flag_mode_strategy == 'rflag':
         run_rflag(vis=vis_for_cal, field=target,
-                  datacolumn_to_flag=cals_datacolumn_to_flag,
+                  datacolumn_to_flag=science_datacolumn_to_flag,
                   timedevscale=rflag_timedevscale_science,
                   freqdevscale=rflag_timedevscale_science,
                   versionname='rflag_science')
