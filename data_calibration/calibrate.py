@@ -681,8 +681,8 @@ def bandpass_cal(i=1, do_plots=False, overwrite=False):
                                                   field=bandpass_calibrator)
     report_flag(summary_after_applycal_to_bandpass, 'field')
 
-    make_plots_stages(vis=vis_for_cal, stage='after', kind=f"after_bandpass_apply_iter_{i}",
-                      FIELDS=bandpass_calibrator.split(','))
+    # make_plots_stages(vis=vis_for_cal, stage='after', kind=f"after_bandpass_apply_iter_{i}",
+    #                   FIELDS=bandpass_calibrator.split(','))
 
     return (gaintables_apply_BP, gainfield_bandpass_apply,
             gain_tables_BP_dict, gaintables_apply_BP_dict, gainfields_apply_BP_dict)
@@ -1046,8 +1046,8 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1,
                                                      field=calibrators_all)
     report_flag(summary_after_applycal_to_calibrators, 'field')
 
-    make_plots_stages(vis=vis_for_cal, stage='after', kind=f"after_allcals_apply_iter_{i}",
-                      FIELDS=calibrators_all.split(','))
+    # make_plots_stages(vis=vis_for_cal, stage='after', kind=f"after_allcals_apply_iter_{i}",
+    #                   FIELDS=calibrators_all.split(','))
 
     """
     We need to return the tables 

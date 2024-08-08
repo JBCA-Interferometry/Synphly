@@ -323,6 +323,7 @@ if do_apply_science_1st_run and 'apply_science_1st_run' not in steps_performed:
         make_plots_stages(vis=vis_for_cal,
                         stage='after',
                         kind='after_apply_cal_1',
+                        extra_plot = False,
                         FIELDS=target.split(','))
         
         # if do_clip_data:
@@ -408,6 +409,7 @@ if do_apply_science and 'apply_science' not in steps_performed:
         make_plots_stages(vis=vis_for_cal,
                     stage='after',
                     kind='after_apply_cal_2',
+                    extra_plot = False,
                     FIELDS=target.split(','))
         
         steps_performed.append('apply_science')
@@ -446,6 +448,7 @@ if do_flag_science and 'flag_science' not in steps_performed:
     make_plots_stages(vis=vis_for_cal,
                       stage='after',
                       kind='final_science_after_flag',
+                      extra_plot = False,
                       FIELDS=target.split(','))
 
     logging.info(' ++==> Reporting data flagged final.')
