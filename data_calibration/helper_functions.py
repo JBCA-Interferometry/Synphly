@@ -870,11 +870,14 @@ def run_imaging_tclean(fields_to_image):
                            velocity=True)
             else:
                 logging.warning(f"Image {imagename+'.image'+ext} exists. Will not image again")
-
-
-            eimshow(imagename+'.image'+ext+'.fits',
-                    num_contours=6,
-                    mad_factor=6)
+            try:
+                eimshow(imagename+'.image'+ext+'.fits',
+                        num_contours=6,
+                        mad_factor=6)
+            except:
+                logging.warning(f" --==>> Could not plot image {imagename+'.image'+ext+'.fits'}")
+                logging.warning(f" --==>> You may need to install astropy inside CASA.")
+                pass
 def ctn(image):
     '''
         Name origin:
