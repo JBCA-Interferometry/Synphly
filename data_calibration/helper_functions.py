@@ -1,6 +1,3 @@
-from casatasks import listobs
-
-
 def set_working_dir():
 
     """
