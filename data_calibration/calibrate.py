@@ -186,9 +186,9 @@ def flux_scale_setjy(vis, flux_density=None, model_image=None, spix=None,
         (2, 4): "S",
         (4, 8): "C",
         (8, 12): "X",
-        (12, 18): "U",  # U is also the Ku band.
+        (12, 18): "U",  # U is the Ku band.
         (18, 26.5): "K",
-        (26.5, 40): "A",  # is Ka the A band?
+        (26.5, 40): "A",  # A is the Ka band
         (40, 50): "Q",
     }
 
@@ -678,7 +678,11 @@ def bandpass_cal(i=1, do_plots=False, overwrite=False):
 
     logging.info('     ++==>> Reporting flags after applycal to bandpass.')
     summary_after_applycal_to_bandpass = flagdata(vis=vis_for_cal, mode='summary',
-                                                  field=bandpass_calibrator)
+                                                  # field=bandpass_calibrator
+                                                  )
+
+    flag_data_steps[f'bandpass_{i}'] = summary_after_applycal_to_bandpass.copy()
+
     report_flag(summary_after_applycal_to_bandpass, 'field')
 
     # make_plots_stages(vis=vis_for_cal, stage='after', kind=f"after_bandpass_apply_iter_{i}",
@@ -1007,7 +1011,8 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1,
 
     logging.info(f"Reporting flags before applycal to calibrators iteration {i}")
     summary_before_applycal_to_calibrators = flagdata(vis=vis_for_cal, mode='summary',
-                                                      field=calibrators_all)
+                                                      # field=calibrators_all
+                                                      )
     report_flag(summary_before_applycal_to_calibrators, 'field')
 
     """
@@ -1043,7 +1048,11 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1,
 
     logging.info(f"Reporting flags after applycal to calibrators iteration {i}")
     summary_after_applycal_to_calibrators = flagdata(vis=vis_for_cal, mode='summary',
-                                                     field=calibrators_all)
+                                                     # field=calibrators_all
+                                                     )
+
+    flag_data_steps[f'applycal_cals_{i}'] = summary_after_applycal_to_calibrators.copy()
+
     report_flag(summary_after_applycal_to_calibrators, 'field')
 
     # make_plots_stages(vis=vis_for_cal, stage='after', kind=f"after_allcals_apply_iter_{i}",
@@ -1060,7 +1069,7 @@ def cal_phases_amplitudes(gaintables_apply_BP, gainfield_bandpass_apply, i=1,
 
 def apply_cal_to_science(vis, gain_tables_to_apply_science_final,
                          gainfield_bandpass_apply_final,
-                         gain_tables_ampphase_for_science_final):
+                         gain_tables_ampphase_for_science_final,i):
     logging.info("Applying calibration to science source(s).")
     # logging.info("Aggregating gaintables  and gainfields.")
 
@@ -1098,6 +1107,7 @@ def apply_cal_to_science(vis, gain_tables_to_apply_science_final,
     print('     => Reporting data flagged after applycal.')
     summary_cal_after = flagdata(vis=vis,
                                  mode='summary', field='', datacolumn='data')
+    flag_data_steps[f'applycal_science_{i}'] = summary_cal_after.copy()
     report_flag(summary_cal_after, 'field')
     
     pass

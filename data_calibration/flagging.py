@@ -77,7 +77,8 @@ def run_aoflagger_nat(vis):
 
 
 def clip_data(vis, field,
-              datacolumn='data', clipminmax=[0, 20]):
+              datacolumn='data', clipminmax=[0, 20],
+              i=1):
     logging.info(f" ++==>> Flagging the data with clip mode...")
     logging.info(f"        Clipping data in the range {clipminmax}")
     logging.info(f" ++==>> Fields to be flagged: {field}")
@@ -92,6 +93,10 @@ def clip_data(vis, field,
              action='apply', datacolumn=datacolumn,
              combinescans=False, flagbackup=False,
              growtime=75.0, growfreq=75.0, extendpols=True)
+    summary_after_clip_corrected = flagdata(vis=vis, mode='summary')
+    flag_data_steps[f'clip_corrected_{i}'] = summary_after_clip_corrected.copy()
+    # report_flag(summary_after_clip_corrected, 'field')
+    pass
 
 
 def tfcrop_raw(vis, field):
@@ -124,6 +129,7 @@ def tfcrop_raw(vis, field):
              growtime=80.0, growfreq=80.0, extendpols=True)
 
     summary_after_tfcrop = flagdata(vis=vis, mode='summary')
+    flag_data_steps['tfcrop_raw'] = summary_after_tfcrop.copy()
     report_flag(summary_after_tfcrop, 'field')
 
     logging.info("Creating flag backup after tfcrop.")
@@ -144,7 +150,8 @@ def report_flag(summary, axis):
 
 def run_rflag(vis, field, datacolumn_to_flag='corrected',
               timedevscale=4.0, freqdevscale=5.0,
-              versionname='applycal_before_rflag'):
+              versionname='applycal_before_rflag',
+              i=1):
     logging.info("Running rflag")
 
     if os.path.exists(f"{vis}.flagversions/flags.{versionname}/"):
@@ -179,13 +186,16 @@ def run_rflag(vis, field, datacolumn_to_flag='corrected',
         logging.error(f"Exception {e} occured while running flagdata")
 
     summary_after_rflag = flagdata(vis=vis, mode='summary')
+    flag_data_steps[f'cal_rflag_{i}'] = summary_after_rflag.copy()
     report_flag(summary_after_rflag, 'field')
+    pass
 
 
 def apply_tfcrop(vis, field, datacolumn_to_flag='corrected',
                  winsize=5, maxnpieces=5,
                  timecutoff=4.0, freqcutoff=4.0,
-                 versionname='applycal_before_tfcrop'):
+                 versionname='applycal_before_tfcrop',
+                 i=1):
     logging.info(f"  ++==>> Applying tfcrop...")
     logging.info(f"  ++==>> Using {datacolumn_to_flag} column for flagging")
     logging.info(f"  ++==>> Creating flag backup before tfcrop...")
@@ -226,6 +236,7 @@ def apply_tfcrop(vis, field, datacolumn_to_flag='corrected',
              growfreq=80.0, extendpols=False)
 
     summary_after_tfcrop = flagdata(vis=vis, mode='summary')
+    flag_data_steps[f'cal_tfcrop_{i}'] = summary_after_tfcrop.copy()
     report_flag(summary_after_tfcrop, 'field')
 
     # print('    ** Saving flags backup after tfcrop...')
@@ -272,9 +283,11 @@ def pre_flagging(vis):
 
     logging.info('Starting pre-flagging to the data.')
 
+    summary_0 = flagdata(vis=vis, mode='summary')
+    flag_data_steps['original'] = summary_0.copy()
+
     if report_verbosity >= 2:
         logging.info('Reporting data flagged at start ...')
-        summary_0 = flagdata(vis=vis, mode='summary')
         report_flag(summary_0, 'field')
         # report_flag(summary_0,'scan')
         # report_flag(summary_0,'antenna')
@@ -297,9 +310,11 @@ def pre_flagging(vis):
     except Exception as e:
         logging.error(f"Exception {e} while flagging autocorrelations")
 
+    summary_autocorr = flagdata(vis=vis, mode='summary')
+    flag_data_steps['autocorr'] = summary_autocorr.copy()
+
     if report_verbosity >= 2:
         logging.info('Reporting flagged data after autocorr flagging...')
-        summary_autocorr = flagdata(vis=vis, mode='summary')
         report_flag(summary_autocorr, 'field')
         # report_flag(summary_autocorr,'scan')
         # report_flag(summary_autocorr,'antenna')
@@ -310,9 +325,11 @@ def pre_flagging(vis):
     except Exception as e:
         logging.error(f"Exception {e} while shadow flagging")
 
+    summary_2 = flagdata(vis=vis, mode='summary')
+    flag_data_steps['shadow'] = summary_2.copy()
+
     if report_verbosity >= 2:
         logging.info('++==>> Reporting data flagged after shadow flagging...')
-        summary_2 = flagdata(vis=vis, mode='summary')
         report_flag(summary_2, 'field')
         # report_flag(summary_2,'scan')
 
@@ -324,9 +341,11 @@ def pre_flagging(vis):
     except Exception as e:
         logging.error(f"Exception {e} while clipping")
 
+    summary_4 = flagdata(vis=vis, mode='summary')
+    flag_data_steps['clip'] = summary_4.copy()
+
     if report_verbosity >= 2:
         logging.info('++==>> Reporting data flagged after clipping')
-        summary_4 = flagdata(vis=vis, mode='summary')
         report_flag(summary_4, 'field')
         # report_flag(summary_4,'scan')
 
@@ -367,9 +386,11 @@ def pre_flagging(vis):
     except Exception as e:
         logging.error(f"Exception {e} while quacking")
 
+    summary_5 = flagdata(vis=vis, mode='summary')
+    flag_data_steps['quack'] = summary_5.copy()
+
     if report_verbosity >= 2:
         logging.info('++==>> Reporting data flagged after quack flagging...')
-        summary_5 = flagdata(vis=vis, mode='summary')
         report_flag(summary_5, 'field')
         # report_flag(summary_5,'scan')
 
@@ -400,6 +421,8 @@ def pre_flagging(vis):
                  reason='edge_channels', flagbackup=False, action='apply',
                  name='edge_channels')
 
+    summary_edge = flagdata(vis=vis, mode='summary')
+    flag_data_steps['edge_channels'] = summary_edge.copy()
 
     # if do_flag_pointing_scans == True:
     try:
@@ -470,6 +493,7 @@ def pre_flagging(vis):
 
     logging.info('Total data after initial flagging')
     summary_pre_cal = flagdata(vis=vis, mode='summary')
+    flag_data_steps['pre_cal'] = summary_pre_cal.copy()
     report_flag(summary_pre_cal, 'field')
     # report_flag(summary_pre_cal, 'scan')
     # report_flag(summary_pre_cal,'antenna')
