@@ -77,6 +77,7 @@ reference = config.get('sources', 'reference')
 do_flagging = config.getboolean('flagging', 'do_flagging')
 do_pre_flagging = config.getboolean('flagging', 'do_pre_flagging')
 do_tfcrop_raw = config.getboolean('flagging', 'do_tfcrop_raw')
+manual_file = config.get('flagging', 'manual_file')
 use_aoflagger = config.getboolean('flagging', 'use_aoflagger')
 aoflagger_sif = config.get('flagging', 'aoflagger_sif')
 aoflagger_strategy = config.get('flagging', 'aoflagger_strategy')
@@ -205,7 +206,7 @@ if ms_info == True:
 
 if run_only_ms_info == False:
     if do_flagging == True and 'flagging' not in steps_performed:
-        logging.info("Flagging data")
+        logging.info(" > Flagging data")
         # run_rflag()
         if do_pre_flagging and 'pre_flagging' not in steps_performed:
             pre_flagging(vis=vis_for_cal)
@@ -213,11 +214,14 @@ if run_only_ms_info == False:
         if do_tfcrop_raw and 'tfcrop_raw' not in steps_performed:
             tfcrop_raw(vis=vis_for_cal, field=calibrators_all)
             steps_performed.append('tfcrop_raw')
-        # manual_flagging()
+
+        logging.info(" ++==>> Running manual flagging.")
+        manual_flagging(vis=vis_for_cal)
+
         if use_aoflagger == True:
             if 'run_aoflagger' not in steps_performed:
                 try:
-                    logging.info("Flagging with AOflagger")
+                    logging.info(" ++==>> Flagging with AOflagger")
                     if use_singularity == True:
                         run_aoflagger_sif(vis=vis_for_cal)
                     else:
@@ -226,7 +230,7 @@ if run_only_ms_info == False:
                 except Exception as e:
                     logging.critical(f"Exception {e}  while running AOflagger")
         else:
-            logging.info("Flagging using aoflagger not requested")
+            logging.info(" --==>> Flagging using aoflagger not requested")
 
         steps_performed.append('flagging')
         plot_flag_stats(flag_data_steps)
@@ -259,6 +263,7 @@ if run_only_ms_info == False:
             # steps_performed.append('initial_corrections')
         except Exception as e:
             logging.critical(f"Exception {e} while performing initial corrections")
+            raise
 
     if do_setjy == True and 'flux_scale_setjy' not in steps_performed:
         flux_density_data, spws, fluxes = flux_scale_setjy(vis=vis_for_cal,
@@ -287,6 +292,7 @@ if run_only_ms_info == False:
         except Exception as e:
             logging.critical(f"Exception {e} while computing ref antenna.")
 
+
     if do_bandpass_1st_run == True and 'bandpass_1st' not in steps_performed:
         try:
             logging.info("Running bandpass calibration")
@@ -297,6 +303,7 @@ if run_only_ms_info == False:
             steps_performed.append('bandpass_1st')
         except Exception as e:
             logging.critical(f"Exception {e} while running bandpass calibration")
+            raise
 
     if do_gain_calibration_1st_run == True and 'gain_calibration_1st' not in steps_performed:
         try:
@@ -342,6 +349,7 @@ if run_only_ms_info == False:
             steps_performed.append('gain_calibration_1st')
         except Exception as e:
             logging.critical(f"Exception {e} while running gain calibration")
+            raise
 
     if do_apply_science_1st_run and 'apply_science_1st_run' not in steps_performed:
         try:
@@ -383,6 +391,7 @@ if run_only_ms_info == False:
             steps_performed.append('apply_science_1st_run')
         except Exception as e:
             logging.critical(f"Exception {e} while applying calibration to science.")
+            raise
 
     if do_bandpass_2nd_run == True and 'bandpass_2nd' not in steps_performed:
         try:
@@ -393,6 +402,7 @@ if run_only_ms_info == False:
             steps_performed.append('bandpass_2nd')
         except Exception as e:
             logging.critical(f"Exception {e} while running bandpass calibration")
+            raise
 
     if do_gain_calibration_2nd_run == True and 'gain_calibration_2nd' not in steps_performed:
         try:
@@ -433,6 +443,7 @@ if run_only_ms_info == False:
             steps_performed.append('gain_calibration_2nd')
         except Exception as e:
             logging.critical(f"Exception {e} while running gain calibration")
+            raise
 
     if do_apply_science and 'apply_science' not in steps_performed:
         try:
@@ -451,6 +462,7 @@ if run_only_ms_info == False:
             steps_performed.append('apply_science')
         except Exception as e:
             logging.critical(f"Exception {e} while applying calibration to science.")
+            raise
 
     if do_run_statwt and 'run_statwt' not in steps_performed:
         logging.info(f" ++==> Running statwt on calibrated data.")

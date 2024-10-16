@@ -250,6 +250,11 @@ basic imaging, using the auto-masking implementation in CASA (enabled with `usem
 'auto-multithresh'` in `tclean`). See function `run_imaging_tclean` in the script 
 [`data_calibration/helper_functions.py`](./data_calibration/helper_functions.py) for more details.
 
+NOTE: To display the images after imaging, you will need to install `astropy` inside the CASA environment.
+For example, enter casa (`$ casa`) and then run:
+```python
+CASA <1>: %pip install astropy
+```
 
 #### 3.5 How to run the script?
 

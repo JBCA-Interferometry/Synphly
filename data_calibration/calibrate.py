@@ -364,8 +364,8 @@ def get_chan_spws_map(vis,edge_channel_flag_frac = 0.05,
     chan_spw_central_map = np.empty(nspw, dtype=object)
     for spw_id in range(nspw):
         chan_spw_central_map[spw_id] = (f"{spw_id}:"
-                                        f"{int(0.3 * msmd.nchan(spw_id))}~"
-                                        f"{int(0.7 * msmd.nchan(spw_id))}")
+                                        f"{int(0.25 * msmd.nchan(spw_id))}~"
+                                        f"{int(0.75 * msmd.nchan(spw_id))}")
     spw_central = ','.join(chan_spw_central_map)
 
     if compute_edge_for_flagging:

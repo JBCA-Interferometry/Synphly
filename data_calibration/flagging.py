@@ -245,16 +245,18 @@ def apply_tfcrop(vis, field, datacolumn_to_flag='corrected',
     pass
 
 
-def manual_flagging():
-    logging.info(f'Flagging using user supplied flagging file {manual}')
+def manual_flagging(vis):
+    logging.info(f' ++==>> Flagging using user supplied flagging file {manual_file}')
     try:
         flagdata(vis=vis, mode='list', inpfile=manual_file, flagbackup=False)
         versionname = 'manual_flagging_1'
-        logging.info(f'Creating new flagbackup file version {manual_flagging_1}')
+        logging.info(f'Creating new flagbackup file version {versionname}')
         flagmanager(vis=vis, mode='save', versionname=versionname,
                     comment='First run of manual flagging.')
+
+        summary_after_manual = flagdata(vis=vis, mode='summary')
+        flag_data_steps[f'manual_flags'] = summary_after_manual.copy()
         if report_verbosity >= 1:
-            summary_after_manual = flagdata(vis=vis, mode='summary')
             report_flag(summary_after_manual, 'field')
             # report_flag(summary_after_manual,'scan')
             # report_flag(summary_after_manual,'antenna')

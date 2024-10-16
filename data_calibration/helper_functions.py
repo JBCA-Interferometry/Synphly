@@ -172,7 +172,7 @@ def average_ms(vis,time_avg=True,channel_avg=False,
         # vis_for_cal = vis_for_cal_avg
     listfile_avg = vis_for_cal_avg.replace(".ms", "_listobs.txt")
     logging.info(f" ++==>> Generating listobs file from averaged data: {listfile_avg}")
-    listobs(vis=vis_for_cal_avg, listfile=listfile_avg)
+    listobs(vis=vis_for_cal_avg, listfile=listfile_avg,overwrite=True)
     return(vis_for_cal_avg)
 
 
@@ -348,6 +348,10 @@ def find_refant(msfile, field, tablename):
                           calmode='p')
     # find_casa_problems()
     # Read solutions (phases):
+
+    make_plot_snr(caltable=tablename, cut_off=3.0,
+                  plot_snr=True, bins=50, density=True, save_fig=True)
+
     tb.open(tablename + '/ANTENNA')
     antenna_names = tb.getcol('NAME')
     tb.close()
@@ -372,15 +376,15 @@ def find_refant(msfile, field, tablename):
         good_frac.append(frac)
         good_snrs.append(snr_mean)
     sort_idx = np.argsort(good_frac)[::-1]
-    print('Antennas sorted by % of good solutions:')
+    logging.info(' ++==>> Antennas sorted by % of good solutions:')
     for i in sort_idx:
-        print('{0:3}: {1:4.1f}, <SNR> = {2:4.1f}'.format(antenna_names[i],
+        logging.info(' ++==>> {0:3}: {1:4.1f}, <SNR> = {2:4.1f}'.format(antenna_names[i],
                                                          good_frac[i],
                                                          good_snrs[i]))
     if good_frac[sort_idx[0]] < 90:
-        print('Small fraction of good solutions with selected refant!')
-        print('Please inspect antennas to select optimal refant')
-        print('You may want to use refantmode= flex" in default_params')
+        logging.info(' ++==>> Small fraction of good solutions with selected refant!')
+        logging.info(' ++==>> Please inspect antennas to select optimal refant')
+        logging.info(' ++==>> You may want to use refantmode="flex" in gaincal')
     pref_ant = antenna_names[sort_idx]
     pref_ant_list = ','.join(list(pref_ant))
     return pref_ant_list
@@ -406,6 +410,9 @@ def calibration_table_plot(table, stage='calibration',
         plotrange = [-1, -1, -180, 180]
     else:
         plotrange = [-1, -1, -1, -1]
+
+    make_plot_snr(caltable=table, cut_off=minsnr,
+                  plot_snr=True, bins=50, density=True, save_fig=True)
 
     if fields == '':
         plotfile = f"{plots_dir}/{stage}/{table_type}_{xaxis}_{yaxis}_field_all_ant_{antenna}_spw_{spw}.jpg"
@@ -714,6 +721,43 @@ def plot_category_data(percentages_over_steps, category):
     plt.clf()
     plt.close()
 
+def get_tb_data(table, param):
+    tb.open(table)
+    param_data = tb.getcol(param).ravel()
+    tb.close()
+    return (param_data)
+
+def make_plot_snr(caltable, cut_off=3.0, plot_snr=True, bins=50, density=True,
+                  save_fig=True):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from scipy import stats
+    snr = get_tb_data(caltable, 'SNR')
+    plt.figure(figsize=(3, 3))
+    if plot_snr:
+        plt.hist(snr, bins=bins, density=density, histtype='step')
+        # plt.legend( loc='upper right' )
+        plt.xlabel('SNR')
+        # plt.semilogy()
+        # plt.semilogx()
+        plt.axvline(x=3, color='k', linestyle='--')
+        plt.axvline(x=cut_off, color='r', linestyle='--')
+        plt.grid()
+        if save_fig == True:
+            try:
+                plt.savefig(caltable.replace('.tb', '.jpg'), dpi=300, bbox_inches='tight')
+            except:
+                plt.savefig(caltable+'.jpg', dpi=300, bbox_inches='tight')
+        # plt.show()
+        plt.clf()
+        plt.close()
+
+    fraction_flagged_solutions = stats.percentileofscore(snr, cut_off)
+
+    logging.info(f" ++==>> Fraction of flagged solutions with SNR < {cut_off} is"
+                 f" {fraction_flagged_solutions:.2f}%")
+    pass
+
 
 def plot_flag_stats(flag_stats):
     # Accumulate percentages with labels
@@ -976,8 +1020,16 @@ def eimshow(imagename, num_contours=5, mad_factor=6, contour_max_factor=0.95,
     # Plot the image using a logarithmic normalization for better visibility of all emission
     norm0 = simple_norm(image_data, stretch='linear', max_percent=99.0)
     img = ax.imshow(image_data, origin='lower', cmap='gray', norm=norm0, alpha=0.5)
-    norm = simple_norm(image_data, stretch='sqrt', asinh_a=0.02, vmin=min_contour_level,
-                       vmax=max_value)
+    try:
+        norm = simple_norm(image_data, stretch='sqrt', asinh_a=0.02, vmin=min_contour_level,
+                           vmax=max_value)
+    except:
+        try:
+            norm = simple_norm(image_data, stretch='sqrt', asinh_a=0.02, min_cut=min_contour_level,
+                               max_cut=max_value)
+        except:
+            norm = simple_norm(image_data, stretch='sqrt', asinh_a=0.02)
+
     # Display the image
     img = ax.imshow(image_data, origin='lower', cmap=cmap, norm=norm)
 
