@@ -215,8 +215,9 @@ if run_only_ms_info == False:
             tfcrop_raw(vis=vis_for_cal, field=calibrators_all)
             steps_performed.append('tfcrop_raw')
 
-        logging.info(" ++==>> Running manual flagging.")
-        manual_flagging(vis=vis_for_cal)
+        if manual_file != '':
+            logging.info(" ++==>> Running manual flagging.")
+            manual_flagging(vis=vis_for_cal)
 
         if use_aoflagger == True:
             if 'run_aoflagger' not in steps_performed:
