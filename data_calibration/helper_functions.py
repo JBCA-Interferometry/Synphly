@@ -830,8 +830,8 @@ def run_imaging_tclean(fields_to_image):
     calcpsf = True
     spw = ''
     outlierfile = ''
-    # specmode = 'mfs'
-    specmode = 'mvc'
+    specmode = 'mfs'
+    # specmode = 'mvc'
     deconvolver = 'mtmfs'
     ext = ''
     # gridder = 'wproject'
