@@ -256,7 +256,7 @@ For example, enter casa (`$ casa`) and then run:
 CASA <1>: %pip install astropy
 ```
 
-#### 3.5 How to run the script?
+#### 3.5 How to run the script
 
 1. Open casa: `$ casa`
 2. Then, execute:
@@ -277,6 +277,9 @@ $ mpicasa -n 8 casa --nogui -c main.py
 ```
 If running with `mpicasa`, in section `imaging` of the configuration file, set the variable
 `parallel = True`. If not running with `mpicasa`, set `parallel = False` to avoid errors in the end.
+
+Warning: Running this step in parallel may not work in some version of CASA.
+
 
 [//]: # (#### 3.6 Known issues)
 
