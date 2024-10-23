@@ -296,5 +296,18 @@ These plots can be found in: `working_directory/plots/after/`.
 These plots can be found in: `working_directory/plots/`.
 
 
+## Development (to-do)
+- [ ] Improve documentation.
+- [ ] Review case of `solnorm=True` for bandpass calibration.
+- [ ] Add imaging arguments to the configuration file.
+- [ ] Calibration on `2nd_run` improves the calibration; however, the model columns of 
+  calibrators are not properly filled (it seems that incremental corrections are being inserted 
+  to the visibilities).
+- [ ] Re-organise plotting functions.
+- [ ] Improve logging.
+- [ ] Improve error handling.
+- [ ] Improve reports; add more features.
+- [ ] Incorporate self-calibration and imaging pipelines from [`morphen`](https://github.com/lucatelli/morphen/tree/dev/selfcal)/[`ph4ser`](https://github.com/lucatelli/ph4ser).
+
 
 
