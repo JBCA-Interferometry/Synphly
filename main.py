@@ -148,6 +148,9 @@ all_solint_short_ap = config.get('calibrate', 'all_solint_short_ap')
 all_solint_long_p = config.get('calibrate', 'all_solint_long_p')
 all_solint_inf_ap = config.get('calibrate', 'all_solint_inf_ap')
 
+bp_fillgaps = config.getint('calibrate', 'bp_fillgaps')
+
+
 do_apply_science_1st_run = config.getboolean('calibrate', 'do_apply_science_1st_run')
 do_apply_science = config.getboolean('calibrate', 'do_apply_science')
 do_flag_science = config.getboolean('calibrate', 'do_flag_science')

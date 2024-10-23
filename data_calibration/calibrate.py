@@ -292,6 +292,7 @@ def run_bandpass(vis, field, scan,
             bandpass(vis=vis, caltable=caltable, scan=scan,
                      field=field, refant=refant, spw=spw,
                      combine=combine, bandtype=bandtype,
+                     fillgaps=bp_fillgaps,
                      solint=solint, minsnr=minsnr, solnorm=solnorm,
                      gaintable=gaintables)
         else:
@@ -299,6 +300,7 @@ def run_bandpass(vis, field, scan,
                 bandpass(vis=vis, caltable=caltable, scan=scan,
                          field=field, refant=refant, spw=spw,
                          combine=combine, bandtype=bandtype,
+                         fillgaps = bp_fillgaps,
                          solint=solint, minsnr=minsnr, solnorm=solnorm,
                          gaintable=gaintables)
             else:
