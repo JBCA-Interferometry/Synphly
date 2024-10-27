@@ -392,9 +392,11 @@ def bandpass_cal(i=1, do_plots=False, overwrite=False):
 
     spw_skip_edge, spw_central = get_chan_spws_map(vis=vis_for_cal)
 
-    if os.path.exists(vis + '.flagversions/flags.before_bandpass_init_' + str(i) + '/'):
-        logging.info(f"Restoring flags from {vis}.flagversions/flags.before_bandpass_init_{i}/")
-        flagmanager(vis=vis, mode='restore', versionname='before_bandpass_init_' + str(i))
+    if os.path.exists(vis_for_cal + '.flagversions/flags.before_bandpass_init_' + str(i) + '/'):
+        logging.info(f"Restoring flags from {vis_for_cal}.flagversions/flags.before_bandpass_init_{i}/")
+        flagmanager(vis=vis_for_cal, mode='restore', versionname='before_bandpass_init_' + str(i))
+        clearcal(vis=vis_for_cal)
+        delmod(vis=vis_for_cal, otf=True, scr=False)
 
     # COMPUTE THE DELAY FOR THE BANDPASS CALIBRATOR
     gain_tables_BP_dict = {}
@@ -1104,6 +1106,7 @@ def apply_cal_to_science(vis, gain_tables_to_apply_science_final,
                  field=target_fields_arr[n],
                  gaintable=gain_tables_to_apply_science_final,
                  flagbackup=False,
+                 applymode = science_applymode,
                  gainfield=gainfields_final, calwt=calwt)
 
     print('     => Reporting data flagged after applycal.')
