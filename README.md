@@ -67,6 +67,10 @@ If you do not have the ASDM file, just provide the ASDM file as the same as the 
 For recent EVLA obvservations, that is all you need to run the pipeline.
 It will use the default options already set in the configuration file (see below more more details).
 
+Note: The current version of the pipeline is not supporting observations with multiple receivers. 
+If you have such observations, for example, L,S,C bands, you will need to split the data into
+each corresponding band. Use the spectral windows range for each case for that.
+
 ### Standard Usage: Early EVLA observations
 For early EVLA observations, things are not direct. We need to know some prior information from 
 the observations. 
@@ -307,6 +311,7 @@ These plots can be found in: `working_directory/plots/`.
 - [ ] Improve logging.
 - [ ] Improve error handling.
 - [ ] Improve reports; add more features.
+- [ ] Ability to calibrate multiple bands in a single observation.
 - [ ] Incorporate self-calibration and imaging pipelines from [`morphen`](https://github.com/lucatelli/morphen/tree/dev/selfcal)/[`ph4ser`](https://github.com/lucatelli/ph4ser).
 
 
