@@ -714,7 +714,7 @@ def plot_category_data(percentages_over_steps, category):
 
     # os.path.join(working_directory).rstrip('/') + '/' + 'plots'
 
-    plt.savefig(f'{os.path.dirname(working_directory)}/plots/flag_stats'
+    plt.savefig(f'{working_directory}/plots/flag_stats'
                 f'_{category}_flagged_data.jpg', dpi=300,
                 bbox_inches='tight')
     # plt.show()
