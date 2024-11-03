@@ -6,7 +6,16 @@ available_models = ['3C123_P.im', '3C138_K.im', '3C138_Q.im', '3C138_X.im', '3C1
                     '3C48_L.im', '3C48_S.im', '3C138_C.im', '3C138_P.im', '3C138_U.im',
                     '3C147_C.im', '3C147_P.im', '3C147_U.im', '3C286_A.im',
                     '3C286_L.im', '3C286_S.im', '3C295_P.im', '3C48_C.im',
+  
+  
                     '3C48_P.im', '3C48_U.im']
+
+
+
+global init_tables
+init_tables = []
+#  antenna pos
+init_tables_dict = {}
 
 
 def initial_corrections(vis):
@@ -25,10 +34,6 @@ def initial_corrections(vis):
     except Exception as e:
         logging.error(f"Exception {e} while checking if {calibration_dir} exists")
 
-    global init_tables
-    init_tables = []
-    #  antenna pos
-    init_tables_dict = {}
 
     try:
         logging.info("Generating cal solutions for antenna positions")
