@@ -714,9 +714,13 @@ def plot_category_data(percentages_over_steps, category):
 
     # os.path.join(working_directory).rstrip('/') + '/' + 'plots'
 
-    plt.savefig(f'{working_directory}/plots/flag_stats'
-                f'_{category}_flagged_data.jpg', dpi=300,
-                bbox_inches='tight')
+    plot_dir = os.path.join(working_directory, 'plots')
+    if not os.path.exists(plot_dir):
+        os.makedirs(plot_dir, exist_ok=True)  # Create the 'plots' folder if it doesn't exist
+    print(f"===========================================>>>>>>>>>>>>>>>>>>>>>This is the plots directory: {plot_dir}")
+    # Save the plot with full path
+    plt.savefig(f'{plot_dir}/flag_stats_{category}_flagged_data.jpg', dpi=300, bbox_inches='tight')
+
     # plt.show()
     plt.clf()
     plt.close()
